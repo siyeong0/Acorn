@@ -156,8 +156,8 @@ namespace aco
 				1);
 
 			copyKernel << <dimGrid, dimBlock >> > (
-				dev_mSurfaceObjectList,
-				mTextureObjMipMapInput,
+				dev_mSurfaceObject,
+				mTextureObjInput,
 				WIDTH, HEIGHT);
 
 			FVector3 eye = { 0.0f, 0.0f, -5.0f };
@@ -199,7 +199,7 @@ namespace aco
 			float3 viewParams = make_float3(planeWidth, planeHeight, nearZ);
 
 			TraceRayKernel << <dimGrid, dimBlock, 0, mStreamToRun >> > (
-				dev_mSurfaceObjectList, WIDTH, HEIGHT,
+				dev_mSurfaceObject, WIDTH, HEIGHT,
 				cameraMatrix, viewParams, make_float3(0.0f, 0.0f, 5.0f), 0.1f);
 
 			cudaVkSemaphoreSignal(mCudaExtCudaUpdateVkSemaphore);

@@ -125,7 +125,7 @@ namespace aco
 
 			if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE)
 			{
-		
+
 			}
 		}
 
@@ -549,20 +549,17 @@ namespace aco
 			vkDestroySampler(mDevice, mTextureSampler, nullptr);
 			vkDestroyImageView(mDevice, mTextureImageView, nullptr);
 
-			for (int i = 0; i < int(mMipLevels); i++)
-			{
-				CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObjectList[i]));
-				CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObjectListTemp[i]));
-			}
+			CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObject));
+			CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObjectTemp));
 
 			sdkDeleteTimer(&mTimer);
 
-			CUDA_CHECK(cudaFree(dev_mSurfaceObjectList));
-			CUDA_CHECK(cudaFree(dev_mSurfaceObjectListTemp));
-			CUDA_CHECK(cudaFreeMipmappedArray(mCudaMipmappedImageArrayTemp));
-			CUDA_CHECK(cudaFreeMipmappedArray(mCudaMipmappedImageArrayOrig));
-			CUDA_CHECK(cudaFreeMipmappedArray(mCudaMipmappedImageArray));
-			CUDA_CHECK(cudaDestroyTextureObject(mTextureObjMipMapInput));
+			CUDA_CHECK(cudaFree(dev_mSurfaceObject));
+			CUDA_CHECK(cudaFree(dev_mSurfaceObjectTemp));
+			CUDA_CHECK(cudaFreeMipmappedArray(mCudaImageArrayTemp));
+			CUDA_CHECK(cudaFreeMipmappedArray(mCudaImageArrayOrig));
+			CUDA_CHECK(cudaFreeMipmappedArray(mCudaImageArray));
+			CUDA_CHECK(cudaDestroyTextureObject(mTextureObjInput));
 			CUDA_CHECK(cudaDestroyExternalMemory(mCudaExtMemImageBuffer));
 			CUDA_CHECK(cudaDestroyExternalSemaphore(mCudaExtCudaUpdateVkSemaphore));
 			CUDA_CHECK(cudaDestroyExternalSemaphore(mCudaExtVkUpdateCudaSemaphore));
@@ -1174,11 +1171,6 @@ namespace aco
 		void VulkanRenderer::createTextureImage()
 		{
 			VkDeviceSize imageSize = WIDTH * HEIGHT * 4;
-			// mipLevels = static_cast<uint32_t>(std::floor(
-			//	std::log2(std::max(imageWidth, imageHeight)))) +
-			//	1;
-			mMipLevels = 1;
-			printf("mipLevels = %d\n", mMipLevels);
 
 			VkBuffer stagingBuffer;
 			VkDeviceMemory stagingBufferMemory;
@@ -1210,102 +1202,6 @@ namespace aco
 
 			vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
 			vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
-
-			generateMipmaps(mTextureImage, VK_FORMAT_R8G8B8A8_UNORM);
-		}
-
-		void VulkanRenderer::generateMipmaps(VkImage image, VkFormat imageFormat)
-		{
-			VkFormatProperties formatProperties;
-			vkGetPhysicalDeviceFormatProperties(mPhysicalDevice, imageFormat, &formatProperties);
-
-			if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			{
-				throw std::runtime_error("texture image format does not support linear blitting!");
-			}
-
-			VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.image = image;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.subresourceRange.levelCount = 1;
-
-			int32_t mipWidth = WIDTH;
-			int32_t mipHeight = HEIGHT;
-
-			for (uint32_t i = 1; i < mMipLevels; i++)
-			{
-				barrier.subresourceRange.baseMipLevel = i - 1;
-				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-				vkCmdPipelineBarrier(commandBuffer,
-					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					0, 0, nullptr, 0, nullptr, 1,
-					&barrier);
-
-				VkImageBlit blit = {};
-				blit.srcOffsets[0] = { 0, 0, 0 };
-				blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
-				blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				blit.srcSubresource.mipLevel = i - 1;
-				blit.srcSubresource.baseArrayLayer = 0;
-				blit.srcSubresource.layerCount = 1;
-				blit.dstOffsets[0] = { 0, 0, 0 };
-				blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
-				blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				blit.dstSubresource.mipLevel = i;
-				blit.dstSubresource.baseArrayLayer = 0;
-				blit.dstSubresource.layerCount = 1;
-
-				vkCmdBlitImage(commandBuffer,
-					image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					1, &blit, VK_FILTER_LINEAR);
-
-				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-				barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-				vkCmdPipelineBarrier(commandBuffer,
-					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					0, 0, nullptr, 0, nullptr, 1,
-					&barrier);
-
-				if (mipWidth > 1)
-				{
-					mipWidth /= 2;
-				}
-				if (mipHeight > 1)
-				{
-					mipHeight /= 2;
-				}
-			}
-
-			barrier.subresourceRange.baseMipLevel = mMipLevels - 1;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-			vkCmdPipelineBarrier(commandBuffer,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				0, 0, nullptr, 0, nullptr, 1,
-				&barrier);
-
-			endSingleTimeCommands(commandBuffer);
 		}
 
 #ifdef _WIN64 // For windows
@@ -1399,7 +1295,7 @@ namespace aco
 			samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 			samplerInfo.minLod = 0; // Optional
-			samplerInfo.maxLod = static_cast<float>(mMipLevels);
+			samplerInfo.maxLod = static_cast<float>(1);
 			samplerInfo.mipLodBias = 0; // Optional
 
 			VK_CHECK(vkCreateSampler(mDevice, &samplerInfo, nullptr, &mTextureSampler));
@@ -1414,7 +1310,7 @@ namespace aco
 			viewInfo.format = format;
 			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			viewInfo.subresourceRange.baseMipLevel = 0;
-			viewInfo.subresourceRange.levelCount = mMipLevels;
+			viewInfo.subresourceRange.levelCount = 1;
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
@@ -1434,7 +1330,7 @@ namespace aco
 			imageInfo.extent.width = width;
 			imageInfo.extent.height = height;
 			imageInfo.extent.depth = 1;
-			imageInfo.mipLevels = mMipLevels;
+			imageInfo.mipLevels = 1;
 			imageInfo.arrayLayers = 1;
 			imageInfo.format = format;
 			imageInfo.tiling = tiling;
@@ -1490,7 +1386,7 @@ namespace aco
 
 			VkMemoryRequirements vkMemoryRequirements = {};
 			vkGetImageMemoryRequirements(mDevice, image, &vkMemoryRequirements);
-			mTotalImageMemSize = vkMemoryRequirements.size;
+			mImageMemSize = vkMemoryRequirements.size;
 
 			VK_CHECK(vkAllocateMemory(mDevice, &allocInfo, nullptr, &mTextureImageMemory));
 
@@ -1834,7 +1730,7 @@ namespace aco
 			printf("CUDA Imported Vulkan semaphore\n");
 		}
 
-		void VulkanRenderer::cudaVkImportImageMem() 
+		void VulkanRenderer::cudaVkImportImageMem()
 		{
 			cudaExternalMemoryHandleDesc cudaExtMemHandleDesc;
 			memset(&cudaExtMemHandleDesc, 0, sizeof(cudaExtMemHandleDesc));
@@ -1851,7 +1747,7 @@ namespace aco
 			cudaExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;
 			cudaExtMemHandleDesc.handle.fd = GetVkImageMemHandle(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR);
 #endif
-			cudaExtMemHandleDesc.size = mTotalImageMemSize;
+			cudaExtMemHandleDesc.size = mImageMemSize;
 
 			CUDA_CHECK(cudaImportExternalMemory(&mCudaExtMemImageBuffer, &cudaExtMemHandleDesc));
 
@@ -1871,52 +1767,42 @@ namespace aco
 			externalMemoryMipmappedArrayDesc.formatDesc = formatDesc;
 			externalMemoryMipmappedArrayDesc.extent = extent;
 			externalMemoryMipmappedArrayDesc.flags = 0;
-			externalMemoryMipmappedArrayDesc.numLevels = mMipLevels;
+			externalMemoryMipmappedArrayDesc.numLevels = 1;
 
-			CUDA_CHECK(cudaExternalMemoryGetMappedMipmappedArray(&mCudaMipmappedImageArray, mCudaExtMemImageBuffer, &externalMemoryMipmappedArrayDesc));
+			CUDA_CHECK(cudaExternalMemoryGetMappedMipmappedArray(&mCudaImageArray, mCudaExtMemImageBuffer, &externalMemoryMipmappedArrayDesc));
 
-			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaMipmappedImageArrayTemp, &formatDesc, extent, mMipLevels));
-			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaMipmappedImageArrayOrig, &formatDesc, extent, mMipLevels));
+			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaImageArrayTemp, &formatDesc, extent, 1));
+			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaImageArrayOrig, &formatDesc, extent, 1));
 
-			for (int mipLevelIdx = 0; mipLevelIdx < int(mMipLevels); mipLevelIdx++)
 			{
-				cudaArray_t cudaMipLevelArray, cudaMipLevelArrayTemp, cudaMipLevelArrayOrig;
+				cudaArray_t cudaArray, cudaArrayTemp, cudaArrayOrig;
 				cudaResourceDesc resourceDesc;
 
-				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaMipLevelArray, mCudaMipmappedImageArray, mipLevelIdx));
-				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaMipLevelArrayTemp, mCudaMipmappedImageArrayTemp, mipLevelIdx));
-				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaMipLevelArrayOrig, mCudaMipmappedImageArrayOrig, mipLevelIdx));
+				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaArray, mCudaImageArray, 0));
+				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaArrayTemp, mCudaImageArrayTemp, 0));
+				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaArrayOrig, mCudaImageArrayOrig, 0));
 
-				uint32_t width = (WIDTH >> mipLevelIdx) ? (WIDTH >> mipLevelIdx) : 1;
-				uint32_t height = (HEIGHT >> mipLevelIdx) ? (HEIGHT >> mipLevelIdx) : 1;
 				CUDA_CHECK(cudaMemcpy2DArrayToArray(
-					cudaMipLevelArrayOrig, 0, 0, 
-					cudaMipLevelArray, 0, 0, width * sizeof(uchar4), height,
+					cudaArrayOrig, 0, 0,
+					cudaArray, 0, 0, WIDTH * sizeof(uchar4), HEIGHT,
 					cudaMemcpyDeviceToDevice));
 
 				memset(&resourceDesc, 0, sizeof(resourceDesc));
 				resourceDesc.resType = cudaResourceTypeArray;
-				resourceDesc.res.array.array = cudaMipLevelArray;
-
-				cudaSurfaceObject_t surfaceObject;
-				CUDA_CHECK(cudaCreateSurfaceObject(&surfaceObject, &resourceDesc));
-
-				mSurfaceObjectList.push_back(surfaceObject);
+				resourceDesc.res.array.array = cudaArray;
+				CUDA_CHECK(cudaCreateSurfaceObject(&mSurfaceObject, &resourceDesc));
 
 				memset(&resourceDesc, 0, sizeof(resourceDesc));
 				resourceDesc.resType = cudaResourceTypeArray;
-				resourceDesc.res.array.array = cudaMipLevelArrayTemp;
-
-				cudaSurfaceObject_t surfaceObjectTemp;
-				CUDA_CHECK(cudaCreateSurfaceObject(&surfaceObjectTemp, &resourceDesc));
-				mSurfaceObjectListTemp.push_back(surfaceObjectTemp);
+				resourceDesc.res.array.array = cudaArrayTemp;
+				CUDA_CHECK(cudaCreateSurfaceObject(&mSurfaceObjectTemp, &resourceDesc));
 			}
 
 			cudaResourceDesc resDescr;
 			memset(&resDescr, 0, sizeof(cudaResourceDesc));
 
 			resDescr.resType = cudaResourceTypeMipmappedArray;
-			resDescr.res.mipmap.mipmap = mCudaMipmappedImageArrayOrig;
+			resDescr.res.mipmap.mipmap = mCudaImageArrayOrig;
 
 			cudaTextureDesc texDescr;
 			memset(&texDescr, 0, sizeof(cudaTextureDesc));
@@ -1924,21 +1810,18 @@ namespace aco
 			texDescr.normalizedCoords = true;
 			texDescr.filterMode = cudaFilterModeLinear;
 			texDescr.mipmapFilterMode = cudaFilterModeLinear;
-
 			texDescr.addressMode[0] = cudaAddressModeWrap;
 			texDescr.addressMode[1] = cudaAddressModeWrap;
-
-			texDescr.maxMipmapLevelClamp = float(mMipLevels - 1);
-
+			texDescr.maxMipmapLevelClamp = 0;
 			texDescr.readMode = cudaReadModeNormalizedFloat;
 
-			CUDA_CHECK(cudaCreateTextureObject(&mTextureObjMipMapInput, &resDescr, &texDescr, NULL));
+			CUDA_CHECK(cudaCreateTextureObject(&mTextureObjInput, &resDescr, &texDescr, NULL));
 
-			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObjectList, sizeof(cudaSurfaceObject_t) * mMipLevels));
-			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObjectListTemp, sizeof(cudaSurfaceObject_t) * mMipLevels));
+			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObject, sizeof(cudaSurfaceObject_t)));
+			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObjectTemp, sizeof(cudaSurfaceObject_t)));
 
-			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObjectList, mSurfaceObjectList.data(), sizeof(cudaSurfaceObject_t) * mMipLevels, cudaMemcpyHostToDevice));
-			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObjectListTemp, mSurfaceObjectListTemp.data(), sizeof(cudaSurfaceObject_t) * mMipLevels, cudaMemcpyHostToDevice));
+			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObject, &mSurfaceObject, sizeof(cudaSurfaceObject_t), cudaMemcpyHostToDevice));
+			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObjectTemp, &mSurfaceObjectTemp, sizeof(cudaSurfaceObject_t), cudaMemcpyHostToDevice));
 
 			printf("CUDA Kernel Vulkan image buffer\n");
 		}
@@ -1958,7 +1841,7 @@ namespace aco
 			barrier.image = image;
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = mMipLevels;
+			barrier.subresourceRange.levelCount = 1;
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = 1;
 

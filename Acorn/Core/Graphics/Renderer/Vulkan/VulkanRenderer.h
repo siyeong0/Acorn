@@ -86,7 +86,6 @@ namespace aco
 			void createFramebuffers();
 			void createCommandPool();
 			void createTextureImage();
-			void generateMipmaps(VkImage image, VkFormat imageFormat);
 #ifdef _WIN64 // For windows
 			HANDLE getVkImageMemHandle(VkExternalMemoryHandleTypeFlagsKHR externalMemoryHandleType);
 			HANDLE getVkSemaphoreHandle(VkExternalSemaphoreHandleTypeFlagBitsKHR externalSemaphoreHandleType, VkSemaphore& semVkCuda);
@@ -203,23 +202,22 @@ namespace aco
 
 			PFN_vkGetPhysicalDeviceProperties2 mFpGetPhysicalDeviceProperties2;
 
-			unsigned int mMipLevels = 1;
-			size_t mTotalImageMemSize;
-
 			// CUDA objects
 			cudaExternalMemory_t mCudaExtMemImageBuffer;
-			cudaMipmappedArray_t mCudaMipmappedImageArray;
-			cudaMipmappedArray_t mCudaMipmappedImageArrayTemp;
-			cudaMipmappedArray_t mCudaMipmappedImageArrayOrig;
-			std::vector<cudaSurfaceObject_t> mSurfaceObjectList;
-			std::vector<cudaSurfaceObject_t> mSurfaceObjectListTemp;
-			cudaSurfaceObject_t* dev_mSurfaceObjectList;
-			cudaSurfaceObject_t* dev_mSurfaceObjectListTemp;
-			cudaTextureObject_t mTextureObjMipMapInput;
+			cudaMipmappedArray_t mCudaImageArray;
+			cudaMipmappedArray_t mCudaImageArrayTemp;
+			cudaMipmappedArray_t mCudaImageArrayOrig;
+			cudaSurfaceObject_t mSurfaceObject;
+			cudaSurfaceObject_t mSurfaceObjectTemp;
+			cudaSurfaceObject_t* dev_mSurfaceObject;
+			cudaSurfaceObject_t* dev_mSurfaceObjectTemp;
+			cudaTextureObject_t mTextureObjInput;
 
 			cudaExternalSemaphore_t mCudaExtCudaUpdateVkSemaphore;
 			cudaExternalSemaphore_t mCudaExtVkUpdateCudaSemaphore;
 			cudaStream_t mStreamToRun;
+
+			size_t mImageMemSize;
 
 			StopWatchInterface* mTimer = nullptr;
 			float mDeltaTime;
