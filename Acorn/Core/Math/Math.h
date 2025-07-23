@@ -18,8 +18,8 @@ namespace aco
 
 	inline void Mat4x4LookAt(FMatrix4x4& out, const FVector3& eye, const FVector3& center, const FVector3& up)
 	{
-		FVector3 f = (center - eye).Norm();
-		FVector3 s = FVector3::Cross(f, up).Norm();
+		FVector3 f = (center - eye).Normalized();
+		FVector3 s = FVector3::Cross(f, up).Normalized();
 		FVector3 u = FVector3::Cross(s, f);
 
 		out = FMatrix4x4::Identity();

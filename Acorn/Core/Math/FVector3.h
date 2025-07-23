@@ -4,6 +4,8 @@
 #include <numeric>
 #include <limits>
 
+#undef max
+
 namespace aco
 {
 	using FLOAT = float;
@@ -47,7 +49,7 @@ namespace aco
 		inline FLOAT SqrMagnitude() const;
 		inline FLOAT Length() const;
 
-		inline FVector3 Norm() const;
+		inline FVector3 Normalized() const;
 		inline void Normalize();
 
 		inline void operator+=(const FVector3& other);
@@ -142,7 +144,7 @@ namespace aco
 		return Magnitude();
 	}
 
-	inline FVector3 FVector3::Norm() const
+	inline FVector3 FVector3::Normalized() const
 	{
 		FLOAT l = Length();
 		if (l == 0)

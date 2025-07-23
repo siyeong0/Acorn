@@ -14,12 +14,9 @@ int main(void)
 
 	aco::gfx::VulkanRenderer app;
 
-	std::string image_filename = "image.jpg";
-
 	try 
 	{
 		// This app only works on ppm images
-		app.LoadImageData(image_filename);
 		app.Run();
 	}
 	catch (const std::exception& e) 

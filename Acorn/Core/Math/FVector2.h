@@ -38,7 +38,7 @@ namespace aco
 		inline FLOAT Length() const;
 		inline FVector2 Perpendicular() const { return FVector2{ -y, x }; }
 
-		inline FVector2 Norm() const;
+		inline FVector2 Normalized() const;
 		inline void Normalize();
 
 		inline void operator+=(const FVector2& other);
@@ -112,7 +112,7 @@ namespace aco
 		return Magnitude();
 	}
 
-	inline FVector2 FVector2::Norm() const
+	inline FVector2 FVector2::Normalized() const
 	{
 		FLOAT len = Length();
 		return (len != 0) ? *this / len : FVector2{ 0.f, 0.f };

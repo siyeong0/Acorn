@@ -215,7 +215,7 @@ namespace aco
 			const FVector3& v0 = Vertices[Indices[3 * triIdx + 0]];
 			const FVector3& v1 = Vertices[Indices[3 * triIdx + 1]];
 			const FVector3& v2 = Vertices[Indices[3 * triIdx + 2]];
-			FVector3 normal = (v1 - v0).Cross(v2 - v0).Norm();
+			FVector3 normal = (v1 - v0).Cross(v2 - v0).Normalized();
 			Normals[Indices[3 * triIdx + 0]] += normal;
 			Normals[Indices[3 * triIdx + 1]] += normal;
 			Normals[Indices[3 * triIdx + 2]] += normal;

@@ -11,12 +11,18 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+// glfw
+#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
+// Vulkan
 #include <vulkan/vulkan.h>
 #ifdef _WIN64
 #include <vulkan/vulkan_win32.h>
 #endif
 
+#include "Math/Math.h"
 #include "../Helper/helper_timer.h"
 
 namespace aco
@@ -31,32 +37,39 @@ namespace aco
 		{
 		public:
 			void Run();
-			void LoadImageData(const std::string& filename);
 
 		public:
 			struct QueueFamilyIndices
 			{
-				int graphicsFamily = -1;
-				int presentFamily = -1;
-				bool IsComplete() { return graphicsFamily >= 0 && presentFamily >= 0; }
+				int GraphicsFamily = -1;
+				int PresentFamily = -1;
+				bool IsComplete() { return GraphicsFamily >= 0 && PresentFamily >= 0; }
 			};
 
 			struct SwapChainSupportDetails
 			{
-				VkSurfaceCapabilitiesKHR capabilities;
-				std::vector<VkSurfaceFormatKHR> formats;
-				std::vector<VkPresentModeKHR> presentModes;
+				VkSurfaceCapabilitiesKHR Capabilities;
+				std::vector<VkSurfaceFormatKHR> Formats;
+				std::vector<VkPresentModeKHR> PresentModes;
 			};
 
 		private:
-			static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+			void updateUniformBuffer();
+			void drawFrame();
+			void drawGui();
+			void cudaVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore);
+			void cudaVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore);
+			void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+			void submitVulkan(uint32_t imageIndex);
+			void submitVulkanCuda(uint32_t imageIndex);
+
 			void initWindow();
 			void initVulkan();
 			void initCuda();
-			void mainLoop();
+			void initImgui();
 			void cleanupSwapChain();
 			void cleanup();
-			void recreateSwapChain();
+
 			void createInstance();
 			void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 			void setupDebugMessenger();
@@ -66,6 +79,7 @@ namespace aco
 			int setCudaVkDevice();
 			void createLogicalDevice();
 			void createSwapChain();
+			void recreateSwapChain();
 			void createImageViews();
 			void createRenderPass();
 			void createDescriptorSetLayout();
@@ -88,41 +102,38 @@ namespace aco
 				uint32_t width, uint32_t height,
 				VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 				VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-			void cudaVkImportSemaphore();
-			void cudaVkImportImageMem();
-			void cudaUpdateVkImage();
-			void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-			void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 			void createVertexBuffer();
 			void createIndexBuffer();
 			void createUniformBuffers();
 			void createDescriptorPool();
 			void createDescriptorSets();
 			void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+			void createCommandBuffers();
+			void createSyncObjects();
+			void createSyncObjectsExt();
+
 			VkCommandBuffer beginSingleTimeCommands();
 			void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 			void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 			uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-			void createCommandBuffers();
-			void createSyncObjects();
-			void createSyncObjectsExt();
-			void updateUniformBuffer();
-			void drawFrame();
-			void cudaVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore);
-			void cudaVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore);
-			void submitVulkan(uint32_t imageIndex);
-			void submitVulkanCuda(uint32_t imageIndex);
-			VkShaderModule createShaderModule(const std::vector<char>& code);
-			VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-			VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-			VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-			SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-			bool isDeviceSuitable(VkPhysicalDevice device);
-			bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-			VulkanRenderer::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-			std::vector<const char*> getRequiredExtensions();
-			bool checkValidationLayerSupport();
-			std::vector<char> readFile(const std::string& filename);
+			void cudaVkImportSemaphore();
+			void cudaVkImportImageMem();
+			void cudaUpdateVkImage();
+			void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+			void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
+			static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+			static VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
+			static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+			static VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+			static VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);
+			static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+			static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
+			static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+			static VulkanRenderer::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+			static std::vector<const char*> getRequiredExtensions();
+			static bool checkValidationLayerSupport();
+			static std::vector<char> readFile(const std::string& filename);
 			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 				VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -193,8 +204,6 @@ namespace aco
 
 			PFN_vkGetPhysicalDeviceProperties2 mFpGetPhysicalDeviceProperties2;
 
-			std::vector<unsigned int> mImageData;
-			unsigned int mImageWidth, mImageHeight;
 			unsigned int mMipLevels = 1;
 			size_t mTotalImageMemSize;
 
@@ -214,6 +223,10 @@ namespace aco
 			cudaStream_t mStreamToRun;
 
 			StopWatchInterface* mTimer = nullptr;
+			float mDeltaTime;
+
+			// GUI supports
+			bool mbMinimized = false;
 		};
 	}
 }

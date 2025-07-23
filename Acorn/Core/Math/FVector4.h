@@ -40,7 +40,7 @@ namespace aco
 		FLOAT SqrMagnitude() const;
 		FLOAT Length() const;
 
-		FVector4 Norm() const;
+		FVector4 Normalized() const;
 		void Normalize();
 
 		inline void operator+=(const FVector4& other);
@@ -122,7 +122,7 @@ namespace aco
 		return Magnitude();
 	}
 
-	inline FVector4 FVector4::Norm() const
+	inline FVector4 FVector4::Normalized() const
 	{
 		FLOAT l = Length();
 		if (l == 0)
