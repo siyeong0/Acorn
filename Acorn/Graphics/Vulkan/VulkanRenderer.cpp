@@ -1050,8 +1050,8 @@ namespace aco
 
 		void VulkanRenderer::createGraphicsPipeline()
 		{
-			auto vertShaderCode = readFile("./Shaders/vert.spv");
-			auto fragShaderCode = readFile("./Shaders/frag.spv");
+			auto vertShaderCode = readFile("./Graphics/Shaders/vert.spv");
+			auto fragShaderCode = readFile("./Graphics/Shaders/frag.spv");
 
 			VkShaderModule vertShaderModule = createShaderModule(mDevice, vertShaderCode);
 			VkShaderModule fragShaderModule = createShaderModule(mDevice, fragShaderCode);
@@ -1905,7 +1905,8 @@ namespace aco
 			printf("CUDA Imported Vulkan semaphore\n");
 		}
 
-		void VulkanRenderer::cudaVkImportImageMem() {
+		void VulkanRenderer::cudaVkImportImageMem() 
+		{
 			cudaExternalMemoryHandleDesc cudaExtMemHandleDesc;
 			memset(&cudaExtMemHandleDesc, 0, sizeof(cudaExtMemHandleDesc));
 #ifdef _WIN64
@@ -1919,7 +1920,6 @@ namespace aco
 				: VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT);
 #else
 			cudaExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;
-
 			cudaExtMemHandleDesc.handle.fd = GetVkImageMemHandle(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR);
 #endif
 			cudaExtMemHandleDesc.size = mTotalImageMemSize;

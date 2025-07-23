@@ -114,10 +114,10 @@
     <CudaCompile Include="Graphics\Vulkan\VulkanRenderer.cu" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\frag.spv" />
-    <None Include="Shaders\shader.frag" />
-    <None Include="Shaders\shader.vert" />
-    <None Include="Shaders\vert.spv" />
+    <None Include="Graphics\Shaders\frag.spv" />
+    <None Include="Graphics\Shaders\shader.frag" />
+    <None Include="Graphics\Shaders\shader.vert" />
+    <None Include="Graphics\Shaders\vert.spv" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
