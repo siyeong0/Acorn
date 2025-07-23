@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include <cmath>
 #include <cstring>
-#include <cassert>
 
 #include "FVector4.h"
 
@@ -62,7 +61,9 @@ namespace aco
 
 	inline FMatrix4x4::FMatrix4x4(std::initializer_list<FLOAT> list)
 	{
-		assert(list.size() == 16);
+		ASSERT(list.size() == 16,
+			"FMatrix4x4 requires 16 elements, but got %zu (%s)",
+			list.size(),list.size() > 16 ? "too many" : "too few");
 		std::copy(list.begin(), list.end(), &m[0][0]);
 	}
 

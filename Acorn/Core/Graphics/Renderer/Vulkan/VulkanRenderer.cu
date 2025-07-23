@@ -1,7 +1,5 @@
 ﻿#include "VulkanRenderer.h"
 
-#include "../Helper/helper_math.h" // copied from cuda_sample
-
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -41,7 +39,6 @@ namespace aco
 
 			if (x < baseWidth && y < baseHeight)
 			{
-
 				float4 t = tex2DLod<float4>(textureMipMapInput, float(x) / baseWidth, float(y) / baseHeight, 0);
 
 				unsigned int dataB = rgbaFloatToInt(t);

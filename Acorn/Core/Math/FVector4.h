@@ -1,8 +1,9 @@
 ﻿#pragma once
-#include <assert.h>
 #include <cmath>
 #include <numeric>
 #include <limits>
+
+#include "Debug.h"
 
 namespace aco
 {
@@ -87,13 +88,13 @@ namespace aco
 
 	inline FLOAT& FVector4::operator[](size_t idx)
 	{
-		assert(idx < 4);
+		ASSERT(idx < 4, "Index out of bounds.");
 		return (&x)[idx];
 	}
 
 	inline const FLOAT& FVector4::operator[](size_t idx) const
 	{
-		assert(idx < 4);
+		ASSERT(idx < 4, "Index out of bounds.");
 		return (&x)[idx];
 	}
 

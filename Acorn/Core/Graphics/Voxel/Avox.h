@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include <cstdint>
-#include <cassert>
 #include <vector>
 #include <string>
 
@@ -18,13 +17,13 @@ namespace aco
 
 		const AvoxNode& GetRoot() const
 		{
-			assert(!Nodes.empty() && "Avox has no nodes.");
+			ASSERT(!Nodes.empty(), "Avox has no nodes.");
 			return Nodes[0];
 		}
 
 		AvoxNode& operator[](size_t index)
 		{
-			assert(index < Nodes.size() && "Index out of bounds.");
+			ASSERT(index < Nodes.size(), "Index out of bounds.");
 			return Nodes[index];
 		}
 

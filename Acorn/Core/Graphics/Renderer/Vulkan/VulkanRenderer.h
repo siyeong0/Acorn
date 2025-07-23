@@ -2,7 +2,6 @@
 
 #define GLFW_INCLUDE_VULKAN
 
-#include <cassert>
 #include <vector>
 #include <string>
 

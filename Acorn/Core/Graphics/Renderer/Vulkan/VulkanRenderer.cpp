@@ -1,8 +1,10 @@
 ﻿#include "VulkanRenderer.h"
 
 #include <iostream>
+#include <fstream>
 #include <array>
 #include <string>
+#include <format>
 #include <set>
 #include <thread>
 
@@ -15,9 +17,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
+#include "Debug.h"
 #include "Math/Math.h"
-
-#include "../Helper/helper_cuda.h" // copied from cuda_sample
 
 namespace aco
 {
@@ -25,9 +26,9 @@ namespace aco
 	{
 		struct Vertex
 		{
-			FVector4 pos;
-			FVector3 color;
-			FVector2 texCoord;
+			FVector4 Position;
+			FVector3 Color;
+			FVector2 TexCoord;
 
 			static VkVertexInputBindingDescription GetBindingDescription()
 			{
@@ -46,17 +47,17 @@ namespace aco
 				attributeDescriptions[0].binding = 0;
 				attributeDescriptions[0].location = 0;
 				attributeDescriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-				attributeDescriptions[0].offset = offsetof(Vertex, pos);
+				attributeDescriptions[0].offset = offsetof(Vertex, Position);
 
 				attributeDescriptions[1].binding = 0;
 				attributeDescriptions[1].location = 1;
 				attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-				attributeDescriptions[1].offset = offsetof(Vertex, color);
+				attributeDescriptions[1].offset = offsetof(Vertex, Color);
 
 				attributeDescriptions[2].binding = 0;
 				attributeDescriptions[2].location = 2;
 				attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-				attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+				attributeDescriptions[2].offset = offsetof(Vertex, TexCoord);
 
 				return attributeDescriptions;
 			}
@@ -64,26 +65,26 @@ namespace aco
 
 		struct UniformBufferObject
 		{
-			alignas(16) FMatrix4x4 model;
-			alignas(16) FMatrix4x4 view;
-			alignas(16) FMatrix4x4 proj;
+			alignas(16) FMatrix4x4 Model;
+			alignas(16) FMatrix4x4 View;
+			alignas(16) FMatrix4x4 Proj;
 		};
 
-		const std::vector<Vertex> vertices =
+		const std::vector<Vertex> sVertices =
 		{
 			{{-1.0f, -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 			{{1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
 			{{1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
 			{{-1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}} };
 
-		const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+		const std::vector<uint16_t> sIndices = { 0, 1, 2, 2, 3, 0 };
 
-		const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+		const std::vector<const char*> sValidationLayers = { "VK_LAYER_KHRONOS_validation" };
 
 #ifdef NDEBUG
-		const bool enableValidationLayers = true;
+		const bool sEnableValidationLayers = true;
 #else
-		const bool enableValidationLayers = false;
+		const bool sEnableValidationLayers = true;
 #endif
 
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
@@ -91,8 +92,7 @@ namespace aco
 			const VkAllocationCallbacks* pAllocator,
 			VkDebugUtilsMessengerEXT* pDebugMessenger)
 		{
-			auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-				instance, "vkCreateDebugUtilsMessengerEXT");
+			auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 			if (func != nullptr)
 			{
 				return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -169,14 +169,14 @@ namespace aco
 			UniformBufferObject ubo = {};
 
 			// 이미지를 화면에 꽉 차게 보여주는 시점으로 설정
-			ubo.model = FMatrix4x4::Identity();
-			Mat4x4Translate(ubo.model, 0.0f, 0.0f, 0.2f);
-			ubo.view = FMatrix4x4::Identity();
+			ubo.Model = FMatrix4x4::Identity();
+			Mat4x4Translate(ubo.Model, 0.0f, 0.0f, 0.2f);
+			ubo.View = FMatrix4x4::Identity();
 			FVector3 eye = { 0.0f, 0.0f, -5.0f };
 			FVector3 center = { 0.0f, 0.0f, 1.0f };
 			FVector3 up = { 0.0f, 1.0f, 0.0f };
-			Mat4x4LookAt(ubo.view, eye, center, up);
-			Mat4x4Ortho(ubo.proj, -1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 10.0f);
+			Mat4x4LookAt(ubo.View, eye, center, up);
+			Mat4x4Ortho(ubo.Proj, -1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 10.0f);
 
 			for (size_t i = 0; i < mSwapChainImages.size(); i++)
 			{
@@ -207,7 +207,7 @@ namespace aco
 			}
 			else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 			{
-				throw std::runtime_error("failed to acquire swap chain image!");
+				throw std::runtime_error(std::format("Failed to acquire swap chain image!. ({})", dbg::VkResultToString(result)));
 			}
 
 			vkResetFences(mDevice, 1, &mInFlightFences[mCurrentFrame]);
@@ -246,7 +246,7 @@ namespace aco
 			}
 			else if (result != VK_SUCCESS)
 			{
-				throw std::runtime_error("failed to present swap chain image!");
+				throw std::runtime_error(std::format("Failed to acquire swap chain image!. ({})", dbg::VkResultToString(result)));
 			}
 
 			cudaUpdateVkImage();
@@ -290,7 +290,7 @@ namespace aco
 
 			extSemaphoreSignalParams.params.fence.value = 0;
 			extSemaphoreSignalParams.flags = 0;
-			checkCudaErrors(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, mStreamToRun));
+			CUDA_CHECK(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, mStreamToRun));
 		}
 
 		void VulkanRenderer::cudaVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore)
@@ -302,7 +302,7 @@ namespace aco
 			extSemaphoreWaitParams.params.fence.value = 0;
 			extSemaphoreWaitParams.flags = 0;
 
-			checkCudaErrors(cudaWaitExternalSemaphoresAsync(&extSemaphore, &extSemaphoreWaitParams, 1, mStreamToRun));
+			CUDA_CHECK(cudaWaitExternalSemaphoresAsync(&extSemaphore, &extSemaphoreWaitParams, 1, mStreamToRun));
 		}
 
 		void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -338,7 +338,7 @@ namespace aco
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout,
 				0, 1, &mDescriptorSets[imageIndex], 0, nullptr);
 
-			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(sIndices.size()), 1, 0, 0, 0);
 			// vkCmdDraw(commandBuffers[i],
 			// static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
@@ -450,7 +450,7 @@ namespace aco
 		void VulkanRenderer::initCuda()
 		{
 			setCudaVkDevice();
-			checkCudaErrors(cudaStreamCreate(&mStreamToRun));
+			CUDA_CHECK(cudaStreamCreate(&mStreamToRun));
 			cudaVkImportImageMem();
 			cudaVkImportSemaphore();
 
@@ -552,21 +552,21 @@ namespace aco
 
 			for (int i = 0; i < int(mMipLevels); i++)
 			{
-				checkCudaErrors(cudaDestroySurfaceObject(mSurfaceObjectList[i]));
-				checkCudaErrors(cudaDestroySurfaceObject(mSurfaceObjectListTemp[i]));
+				CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObjectList[i]));
+				CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObjectListTemp[i]));
 			}
 
 			sdkDeleteTimer(&mTimer);
 
-			checkCudaErrors(cudaFree(dev_mSurfaceObjectList));
-			checkCudaErrors(cudaFree(dev_mSurfaceObjectListTemp));
-			checkCudaErrors(cudaFreeMipmappedArray(mCudaMipmappedImageArrayTemp));
-			checkCudaErrors(cudaFreeMipmappedArray(mCudaMipmappedImageArrayOrig));
-			checkCudaErrors(cudaFreeMipmappedArray(mCudaMipmappedImageArray));
-			checkCudaErrors(cudaDestroyTextureObject(mTextureObjMipMapInput));
-			checkCudaErrors(cudaDestroyExternalMemory(mCudaExtMemImageBuffer));
-			checkCudaErrors(cudaDestroyExternalSemaphore(mCudaExtCudaUpdateVkSemaphore));
-			checkCudaErrors(cudaDestroyExternalSemaphore(mCudaExtVkUpdateCudaSemaphore));
+			CUDA_CHECK(cudaFree(dev_mSurfaceObjectList));
+			CUDA_CHECK(cudaFree(dev_mSurfaceObjectListTemp));
+			CUDA_CHECK(cudaFreeMipmappedArray(mCudaMipmappedImageArrayTemp));
+			CUDA_CHECK(cudaFreeMipmappedArray(mCudaMipmappedImageArrayOrig));
+			CUDA_CHECK(cudaFreeMipmappedArray(mCudaMipmappedImageArray));
+			CUDA_CHECK(cudaDestroyTextureObject(mTextureObjMipMapInput));
+			CUDA_CHECK(cudaDestroyExternalMemory(mCudaExtMemImageBuffer));
+			CUDA_CHECK(cudaDestroyExternalSemaphore(mCudaExtCudaUpdateVkSemaphore));
+			CUDA_CHECK(cudaDestroyExternalSemaphore(mCudaExtVkUpdateCudaSemaphore));
 
 			vkDestroyImage(mDevice, mTextureImage, nullptr);
 			vkFreeMemory(mDevice, mTextureImageMemory, nullptr);
@@ -593,7 +593,7 @@ namespace aco
 
 			vkDestroyDevice(mDevice, nullptr);
 
-			if (enableValidationLayers)
+			if (sEnableValidationLayers)
 			{
 				DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
 			}
@@ -609,7 +609,7 @@ namespace aco
 		void VulkanRenderer::createInstance()
 		{
 #pragma warning(disable : 6237)
-			if (enableValidationLayers && !checkValidationLayerSupport())
+			if (sEnableValidationLayers && !checkValidationLayerSupport())
 #pragma warning(default : 6237)
 			{
 				throw std::runtime_error("validation layers requested, but not available!");
@@ -632,10 +632,10 @@ namespace aco
 			createInfo.ppEnabledExtensionNames = extensions.data();
 
 			VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-			if (enableValidationLayers)
+			if (sEnableValidationLayers)
 			{
-				createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-				createInfo.ppEnabledLayerNames = validationLayers.data();
+				createInfo.enabledLayerCount = static_cast<uint32_t>(sValidationLayers.size());
+				createInfo.ppEnabledLayerNames = sValidationLayers.data();
 
 				populateDebugMessengerCreateInfo(debugCreateInfo);
 				createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
@@ -646,32 +646,25 @@ namespace aco
 				createInfo.pNext = nullptr;
 			}
 
-			auto result = vkCreateInstance(&createInfo, nullptr, &mInstance);
-
-			if (result != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create instance!");
-			}
+			VK_CHECK(vkCreateInstance(&createInfo, nullptr, &mInstance));
 
 			mFpGetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2)vkGetInstanceProcAddr(mInstance, "vkGetPhysicalDeviceProperties2");
 			if (mFpGetPhysicalDeviceProperties2 == NULL)
 			{
-				throw std::runtime_error("Vulkan: Proc address for "
-					"\"vkGetPhysicalDeviceProperties2KHR\" not "
-					"found.\n");
+				throw std::runtime_error("Vulkan: Proc address for vkGetPhysicalDeviceProperties2KHR not found.\n");
 			}
 
 #ifdef _WIN64
 			mFpGetMemoryWin32HandleKHR = (PFN_vkGetMemoryWin32HandleKHR)vkGetInstanceProcAddr(mInstance, "vkGetMemoryWin32HandleKHR");
 			if (mFpGetMemoryWin32HandleKHR == NULL)
 			{
-				throw std::runtime_error("Vulkan: Proc address for \"vkGetMemoryWin32HandleKHR\" not found.\n");
+				throw std::runtime_error("Vulkan: Proc address for vkGetMemoryWin32HandleKHR not found.\n");
 			}
 #else
 			mFpGetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)vkGetInstanceProcAddr(instance, "vkGetMemoryFdKHR");
 			if (mFpGetMemoryFdKHR == NULL)
 			{
-				throw std::runtime_error("Vulkan: Proc address for \"vkGetMemoryFdKHR\" not found.\n");
+				throw std::runtime_error("Vulkan: Proc address for vkGetMemoryFdKHR not found.\n");
 			}
 			else
 			{
@@ -697,7 +690,7 @@ namespace aco
 
 		void VulkanRenderer::setupDebugMessenger()
 		{
-			if (!enableValidationLayers)
+			if (!sEnableValidationLayers)
 			{
 				return;
 			}
@@ -705,28 +698,22 @@ namespace aco
 			VkDebugUtilsMessengerCreateInfoEXT createInfo;
 			populateDebugMessengerCreateInfo(createInfo);
 
-			if (CreateDebugUtilsMessengerEXT(mInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to set up debug messenger!");
-			}
+			VK_CHECK(CreateDebugUtilsMessengerEXT(mInstance, &createInfo, nullptr, &mDebugMessenger));
 		}
 
 		void VulkanRenderer::createSurface()
 		{
-			if (glfwCreateWindowSurface(mInstance, mWindow, nullptr, &mSurface) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create window surface!");
-			}
+			VK_CHECK(glfwCreateWindowSurface(mInstance, mWindow, nullptr, &mSurface));
 		}
 
 		void VulkanRenderer::pickPhysicalDevice()
 		{
 			uint32_t deviceCount = 0;
-			vkEnumeratePhysicalDevices(mInstance, &deviceCount, nullptr);
+			VK_CHECK(vkEnumeratePhysicalDevices(mInstance, &deviceCount, nullptr));
 
 			if (deviceCount == 0)
 			{
-				throw std::runtime_error("failed to find GPUs with Vulkan support!");
+				throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 			}
 
 			std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -743,7 +730,7 @@ namespace aco
 
 			if (mPhysicalDevice == VK_NULL_HANDLE)
 			{
-				throw std::runtime_error("failed to find a suitable GPU!");
+				throw std::runtime_error("Failed to find a suitable GPU!");
 			}
 
 			std::cout << "Selected physical device = " << mPhysicalDevice << std::endl;
@@ -785,7 +772,7 @@ namespace aco
 			int devices_prohibited = 0;
 
 			cudaDeviceProp deviceProp;
-			checkCudaErrors(cudaGetDeviceCount(&device_count));
+			CUDA_CHECK(cudaGetDeviceCount(&device_count));
 
 			if (device_count == 0)
 			{
@@ -804,8 +791,8 @@ namespace aco
 					int ret = memcmp(&deviceProp.uuid, &mVkDeviceUUID, VK_UUID_SIZE);
 					if (ret == 0)
 					{
-						checkCudaErrors(cudaSetDevice(current_device));
-						checkCudaErrors(cudaGetDeviceProperties(&deviceProp, current_device));
+						CUDA_CHECK(cudaSetDevice(current_device));
+						CUDA_CHECK(cudaGetDeviceProperties(&deviceProp, current_device));
 						printf("GPU Device %d: \"%s\" with compute capability %d.%d\n\n",
 							current_device, deviceProp.name, deviceProp.major, deviceProp.minor);
 
@@ -863,10 +850,10 @@ namespace aco
 			{
 				enabledExtensionNameList.push_back(deviceExtensions[i]);
 			}
-			if (enableValidationLayers)
+			if (sEnableValidationLayers)
 			{
-				createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-				createInfo.ppEnabledLayerNames = validationLayers.data();
+				createInfo.enabledLayerCount = static_cast<uint32_t>(sValidationLayers.size());
+				createInfo.ppEnabledLayerNames = sValidationLayers.data();
 			}
 			else
 			{
@@ -875,10 +862,7 @@ namespace aco
 			createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensionNameList.size());
 			createInfo.ppEnabledExtensionNames = enabledExtensionNameList.data();
 
-			if (vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create logical device!");
-			}
+			VK_CHECK(vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice));
 			vkGetDeviceQueue(mDevice, indices.GraphicsFamily, 0, &mGraphicsQueue);
 			vkGetDeviceQueue(mDevice, indices.PresentFamily, 0, &mPresentQueue);
 		}
@@ -929,10 +913,7 @@ namespace aco
 			createInfo.presentMode = presentMode;
 			createInfo.clipped = VK_TRUE;
 
-			if (vkCreateSwapchainKHR(mDevice, &createInfo, nullptr, &mSwapChain) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create swap chain!");
-			}
+			VK_CHECK(vkCreateSwapchainKHR(mDevice, &createInfo, nullptr, &mSwapChain));
 
 			vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, nullptr);
 			mSwapChainImages.resize(imageCount);
@@ -1014,10 +995,7 @@ namespace aco
 			renderPassInfo.dependencyCount = 1;
 			renderPassInfo.pDependencies = &dependency;
 
-			if (vkCreateRenderPass(mDevice, &renderPassInfo, nullptr, &mRenderPass) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create render pass!");
-			}
+			VK_CHECK(vkCreateRenderPass(mDevice, &renderPassInfo, nullptr, &mRenderPass));
 		}
 
 		void VulkanRenderer::createDescriptorSetLayout()
@@ -1042,16 +1020,13 @@ namespace aco
 			layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 			layoutInfo.pBindings = bindings.data();
 
-			if (vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create descriptor set layout!");
-			}
+			VK_CHECK(vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &mDescriptorSetLayout));
 		}
 
 		void VulkanRenderer::createGraphicsPipeline()
 		{
-			auto vertShaderCode = readFile("./Graphics/Shaders/vert.spv");
-			auto fragShaderCode = readFile("./Graphics/Shaders/frag.spv");
+			auto vertShaderCode = readFile("./Shaders/vert.spv");
+			auto fragShaderCode = readFile("./Shaders/frag.spv");
 
 			VkShaderModule vertShaderModule = createShaderModule(mDevice, vertShaderCode);
 			VkShaderModule fragShaderModule = createShaderModule(mDevice, fragShaderCode);
@@ -1142,10 +1117,7 @@ namespace aco
 			pipelineLayoutInfo.setLayoutCount = 1;
 			pipelineLayoutInfo.pSetLayouts = &mDescriptorSetLayout;
 
-			if (vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipelineLayout) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create pipeline layout!");
-			}
+			VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipelineLayout));
 
 			VkGraphicsPipelineCreateInfo pipelineInfo = {};
 			pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -1162,10 +1134,7 @@ namespace aco
 			pipelineInfo.subpass = 0;
 			pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-			if (vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mGraphicsPipeline) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create graphics pipeline!");
-			}
+			VK_CHECK(vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mGraphicsPipeline));
 
 			vkDestroyShaderModule(mDevice, fragShaderModule, nullptr);
 			vkDestroyShaderModule(mDevice, vertShaderModule, nullptr);
@@ -1188,10 +1157,7 @@ namespace aco
 				framebufferInfo.height = mSwapChainExtent.height;
 				framebufferInfo.layers = 1;
 
-				if (vkCreateFramebuffer(mDevice, &framebufferInfo, nullptr, &mSwapChainFramebuffers[i]) != VK_SUCCESS)
-				{
-					throw std::runtime_error("failed to create framebuffer!");
-				}
+				VK_CHECK(vkCreateFramebuffer(mDevice, &framebufferInfo, nullptr, &mSwapChainFramebuffers[i]));
 			}
 		}
 
@@ -1203,10 +1169,7 @@ namespace aco
 			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			poolInfo.queueFamilyIndex = queueFamilyIndices.GraphicsFamily;
 
-			if (vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mCommandPool) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create graphics command pool!");
-			}
+			VK_CHECK(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mCommandPool));
 		}
 
 		void VulkanRenderer::createTextureImage()
@@ -1440,10 +1403,7 @@ namespace aco
 			samplerInfo.maxLod = static_cast<float>(mMipLevels);
 			samplerInfo.mipLodBias = 0; // Optional
 
-			if (vkCreateSampler(mDevice, &samplerInfo, nullptr, &mTextureSampler) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create texture sampler!");
-			}
+			VK_CHECK(vkCreateSampler(mDevice, &samplerInfo, nullptr, &mTextureSampler));
 		}
 
 		VkImageView VulkanRenderer::createImageView(VkImage image, VkFormat format)
@@ -1460,10 +1420,7 @@ namespace aco
 			viewInfo.subresourceRange.layerCount = 1;
 
 			VkImageView imageView;
-			if (vkCreateImageView(mDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create texture image view!");
-			}
+			VK_CHECK(vkCreateImageView(mDevice, &viewInfo, nullptr, &imageView));
 
 			return imageView;
 		}
@@ -1498,10 +1455,7 @@ namespace aco
 
 			imageInfo.pNext = &vkExternalMemImageCreateInfo;
 
-			if (vkCreateImage(mDevice, &imageInfo, nullptr, &image) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create image!");
-			}
+			VK_CHECK(vkCreateImage(mDevice, &imageInfo, nullptr, &image));
 
 			VkMemoryRequirements memRequirements;
 			vkGetImageMemoryRequirements(mDevice, image, &memRequirements);
@@ -1539,17 +1493,14 @@ namespace aco
 			vkGetImageMemoryRequirements(mDevice, image, &vkMemoryRequirements);
 			mTotalImageMemSize = vkMemoryRequirements.size;
 
-			if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &mTextureImageMemory) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to allocate image memory!");
-			}
+			VK_CHECK(vkAllocateMemory(mDevice, &allocInfo, nullptr, &mTextureImageMemory));
 
 			vkBindImageMemory(mDevice, image, mTextureImageMemory, 0);
 		}
 
 		void VulkanRenderer::createVertexBuffer()
 		{
-			VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+			VkDeviceSize bufferSize = sizeof(sVertices[0]) * sVertices.size();
 
 			VkBuffer stagingBuffer;
 			VkDeviceMemory stagingBufferMemory;
@@ -1561,7 +1512,7 @@ namespace aco
 
 			void* data;
 			vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-			memcpy(data, vertices.data(), (size_t)bufferSize);
+			memcpy(data, sVertices.data(), (size_t)bufferSize);
 			vkUnmapMemory(mDevice, stagingBufferMemory);
 
 			createBuffer(bufferSize,
@@ -1578,7 +1529,7 @@ namespace aco
 
 		void VulkanRenderer::createIndexBuffer()
 		{
-			VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+			VkDeviceSize bufferSize = sizeof(sIndices[0]) * sIndices.size();
 
 			VkBuffer stagingBuffer;
 			VkDeviceMemory stagingBufferMemory;
@@ -1590,7 +1541,7 @@ namespace aco
 
 			void* data;
 			vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-			memcpy(data, indices.data(), (size_t)bufferSize);
+			memcpy(data, sIndices.data(), (size_t)bufferSize);
 			vkUnmapMemory(mDevice, stagingBufferMemory);
 
 			createBuffer(bufferSize,
@@ -1635,10 +1586,7 @@ namespace aco
 			poolInfo.pPoolSizes = poolSizes.data();
 			poolInfo.maxSets = static_cast<uint32_t>(mSwapChainImages.size());
 
-			if (vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create descriptor pool!");
-			}
+			VK_CHECK(vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &mDescriptorPool));
 		}
 
 		void VulkanRenderer::createDescriptorSets()
@@ -1651,10 +1599,7 @@ namespace aco
 			allocInfo.pSetLayouts = layouts.data();
 
 			mDescriptorSets.resize(mSwapChainImages.size());
-			if (vkAllocateDescriptorSets(mDevice, &allocInfo, mDescriptorSets.data()) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to allocate descriptor sets!");
-			}
+			VK_CHECK(vkAllocateDescriptorSets(mDevice, &allocInfo, mDescriptorSets.data()));
 
 			for (size_t i = 0; i < mSwapChainImages.size(); i++)
 			{
@@ -1699,10 +1644,7 @@ namespace aco
 			bufferInfo.usage = usage;
 			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create buffer!");
-			}
+			VK_CHECK(vkCreateBuffer(mDevice, &bufferInfo, nullptr, &buffer));
 
 			VkMemoryRequirements memRequirements;
 			vkGetBufferMemoryRequirements(mDevice, buffer, &memRequirements);
@@ -1712,10 +1654,7 @@ namespace aco
 			allocInfo.allocationSize = memRequirements.size;
 			allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-			if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to allocate buffer memory!");
-			}
+			VK_CHECK(vkAllocateMemory(mDevice, &allocInfo, nullptr, &bufferMemory));
 
 			vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
 		}
@@ -1730,10 +1669,7 @@ namespace aco
 			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 			allocInfo.commandBufferCount = (uint32_t)mCommandBuffers.size();
 
-			if (vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to allocate command buffers!");
-			}
+			VK_CHECK(vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()));
 		}
 
 		void VulkanRenderer::createSyncObjects()
@@ -1751,12 +1687,9 @@ namespace aco
 
 			for (size_t i = 0; i < MAX_FRAMES; i++)
 			{
-				if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mImageAvailableSemaphores[i]) != VK_SUCCESS ||
-					vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mRenderFinishedSemaphores[i]) != VK_SUCCESS ||
-					vkCreateFence(mDevice, &fenceInfo, nullptr, &mInFlightFences[i]) != VK_SUCCESS)
-				{
-					throw std::runtime_error("failed to create synchronization objects for a frame!");
-				}
+				VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mImageAvailableSemaphores[i]));
+				VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mRenderFinishedSemaphores[i]));
+				VK_CHECK(vkCreateFence(mDevice, &fenceInfo, nullptr, &mInFlightFences[i]));
 			}
 		}
 
@@ -1794,11 +1727,8 @@ namespace aco
 #endif
 			semaphoreInfo.pNext = &vulkanExportSemaphoreCreateInfo;
 
-			if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &cudaUpdateVkSemaphore) != VK_SUCCESS ||
-				vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mVkUpdateCudaSemaphore) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create synchronization objects for a CUDA-Vulkan!");
-			}
+			VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &cudaUpdateVkSemaphore));
+			VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mVkUpdateCudaSemaphore));
 		}
 
 		VkCommandBuffer VulkanRenderer::beginSingleTimeCommands()
@@ -1884,7 +1814,7 @@ namespace aco
 #endif
 			externalSemaphoreHandleDesc.flags = 0;
 
-			checkCudaErrors(cudaImportExternalSemaphore(&mCudaExtCudaUpdateVkSemaphore, &externalSemaphoreHandleDesc));
+			CUDA_CHECK(cudaImportExternalSemaphore(&mCudaExtCudaUpdateVkSemaphore, &externalSemaphoreHandleDesc));
 
 			memset(&externalSemaphoreHandleDesc, 0, sizeof(externalSemaphoreHandleDesc));
 #ifdef _WIN64
@@ -1901,7 +1831,7 @@ namespace aco
 			externalSemaphoreHandleDesc.handle.fd = GetVkSemaphoreHandle(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT, vkUpdateCudaSemaphore);
 #endif
 			externalSemaphoreHandleDesc.flags = 0;
-			checkCudaErrors(cudaImportExternalSemaphore(&mCudaExtVkUpdateCudaSemaphore, &externalSemaphoreHandleDesc));
+			CUDA_CHECK(cudaImportExternalSemaphore(&mCudaExtVkUpdateCudaSemaphore, &externalSemaphoreHandleDesc));
 			printf("CUDA Imported Vulkan semaphore\n");
 		}
 
@@ -1924,7 +1854,7 @@ namespace aco
 #endif
 			cudaExtMemHandleDesc.size = mTotalImageMemSize;
 
-			checkCudaErrors(cudaImportExternalMemory(&mCudaExtMemImageBuffer, &cudaExtMemHandleDesc));
+			CUDA_CHECK(cudaImportExternalMemory(&mCudaExtMemImageBuffer, &cudaExtMemHandleDesc));
 
 			cudaExternalMemoryMipmappedArrayDesc externalMemoryMipmappedArrayDesc;
 
@@ -1944,23 +1874,23 @@ namespace aco
 			externalMemoryMipmappedArrayDesc.flags = 0;
 			externalMemoryMipmappedArrayDesc.numLevels = mMipLevels;
 
-			checkCudaErrors(cudaExternalMemoryGetMappedMipmappedArray(&mCudaMipmappedImageArray, mCudaExtMemImageBuffer, &externalMemoryMipmappedArrayDesc));
+			CUDA_CHECK(cudaExternalMemoryGetMappedMipmappedArray(&mCudaMipmappedImageArray, mCudaExtMemImageBuffer, &externalMemoryMipmappedArrayDesc));
 
-			checkCudaErrors(cudaMallocMipmappedArray(&mCudaMipmappedImageArrayTemp, &formatDesc, extent, mMipLevels));
-			checkCudaErrors(cudaMallocMipmappedArray(&mCudaMipmappedImageArrayOrig, &formatDesc, extent, mMipLevels));
+			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaMipmappedImageArrayTemp, &formatDesc, extent, mMipLevels));
+			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaMipmappedImageArrayOrig, &formatDesc, extent, mMipLevels));
 
 			for (int mipLevelIdx = 0; mipLevelIdx < int(mMipLevels); mipLevelIdx++)
 			{
 				cudaArray_t cudaMipLevelArray, cudaMipLevelArrayTemp, cudaMipLevelArrayOrig;
 				cudaResourceDesc resourceDesc;
 
-				checkCudaErrors(cudaGetMipmappedArrayLevel(&cudaMipLevelArray, mCudaMipmappedImageArray, mipLevelIdx));
-				checkCudaErrors(cudaGetMipmappedArrayLevel(&cudaMipLevelArrayTemp, mCudaMipmappedImageArrayTemp, mipLevelIdx));
-				checkCudaErrors(cudaGetMipmappedArrayLevel(&cudaMipLevelArrayOrig, mCudaMipmappedImageArrayOrig, mipLevelIdx));
+				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaMipLevelArray, mCudaMipmappedImageArray, mipLevelIdx));
+				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaMipLevelArrayTemp, mCudaMipmappedImageArrayTemp, mipLevelIdx));
+				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaMipLevelArrayOrig, mCudaMipmappedImageArrayOrig, mipLevelIdx));
 
 				uint32_t width = (WIDTH >> mipLevelIdx) ? (WIDTH >> mipLevelIdx) : 1;
 				uint32_t height = (HEIGHT >> mipLevelIdx) ? (HEIGHT >> mipLevelIdx) : 1;
-				checkCudaErrors(cudaMemcpy2DArrayToArray(
+				CUDA_CHECK(cudaMemcpy2DArrayToArray(
 					cudaMipLevelArrayOrig, 0, 0, cudaMipLevelArray, 0,
 					0, width * sizeof(uchar4), height,
 					cudaMemcpyDeviceToDevice));
@@ -1970,7 +1900,7 @@ namespace aco
 				resourceDesc.res.array.array = cudaMipLevelArray;
 
 				cudaSurfaceObject_t surfaceObject;
-				checkCudaErrors(cudaCreateSurfaceObject(&surfaceObject, &resourceDesc));
+				CUDA_CHECK(cudaCreateSurfaceObject(&surfaceObject, &resourceDesc));
 
 				mSurfaceObjectList.push_back(surfaceObject);
 
@@ -1979,7 +1909,7 @@ namespace aco
 				resourceDesc.res.array.array = cudaMipLevelArrayTemp;
 
 				cudaSurfaceObject_t surfaceObjectTemp;
-				checkCudaErrors(cudaCreateSurfaceObject(&surfaceObjectTemp, &resourceDesc));
+				CUDA_CHECK(cudaCreateSurfaceObject(&surfaceObjectTemp, &resourceDesc));
 				mSurfaceObjectListTemp.push_back(surfaceObjectTemp);
 			}
 
@@ -2003,13 +1933,13 @@ namespace aco
 
 			texDescr.readMode = cudaReadModeNormalizedFloat;
 
-			checkCudaErrors(cudaCreateTextureObject(&mTextureObjMipMapInput, &resDescr, &texDescr, NULL));
+			CUDA_CHECK(cudaCreateTextureObject(&mTextureObjMipMapInput, &resDescr, &texDescr, NULL));
 
-			checkCudaErrors(cudaMalloc((void**)&dev_mSurfaceObjectList, sizeof(cudaSurfaceObject_t) * mMipLevels));
-			checkCudaErrors(cudaMalloc((void**)&dev_mSurfaceObjectListTemp, sizeof(cudaSurfaceObject_t) * mMipLevels));
+			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObjectList, sizeof(cudaSurfaceObject_t) * mMipLevels));
+			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObjectListTemp, sizeof(cudaSurfaceObject_t) * mMipLevels));
 
-			checkCudaErrors(cudaMemcpy(dev_mSurfaceObjectList, mSurfaceObjectList.data(), sizeof(cudaSurfaceObject_t) * mMipLevels, cudaMemcpyHostToDevice));
-			checkCudaErrors(cudaMemcpy(dev_mSurfaceObjectListTemp, mSurfaceObjectListTemp.data(), sizeof(cudaSurfaceObject_t) * mMipLevels, cudaMemcpyHostToDevice));
+			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObjectList, mSurfaceObjectList.data(), sizeof(cudaSurfaceObject_t) * mMipLevels, cudaMemcpyHostToDevice));
+			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObjectListTemp, mSurfaceObjectListTemp.data(), sizeof(cudaSurfaceObject_t) * mMipLevels, cudaMemcpyHostToDevice));
 
 			printf("CUDA Kernel Vulkan image buffer\n");
 		}
@@ -2098,10 +2028,7 @@ namespace aco
 			createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 			VkShaderModule shaderModule;
-			if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create shader module!");
-			}
+			VK_CHECK(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
 
 			return shaderModule;
 		}
@@ -2277,7 +2204,7 @@ namespace aco
 
 			std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-			if (enableValidationLayers)
+			if (sEnableValidationLayers)
 			{
 				extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			}
@@ -2293,7 +2220,7 @@ namespace aco
 			std::vector<VkLayerProperties> availableLayers(layerCount);
 			vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-			for (const char* layerName : validationLayers)
+			for (const char* layerName : sValidationLayers)
 			{
 				bool layerFound = false;
 

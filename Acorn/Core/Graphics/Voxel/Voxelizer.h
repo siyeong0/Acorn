@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "Mesh/Mesh.h"
-#include "Voxel/Avox.h"
+#include "Graphics/Mesh/Mesh.h"
+#include "Graphics/Voxel/Avox.h"
 
 namespace aco
 {

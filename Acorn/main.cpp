@@ -1,22 +1,23 @@
 ﻿#include <iostream>
 
-#include "Core/Mesh/Mesh.h"
-#include "Core/Voxel/Avox.h"
-#include "Core/Voxelizer.h"
+#include "Graphics/Mesh/Mesh.h"
+#include "Graphics/Voxel/Avox.h"
+#include "Graphics/Voxel/Voxelizer.h"
 
-#include "Graphics\Vulkan\VulkanRenderer.h"
+#include "Graphics/Renderer/Vulkan/VulkanRenderer.h"
 
 #include "Utils/Path.h"
+
+#include "Debug.h"
 
 int main(void)
 {
 	std::cout << "Acorn is running!" << std::endl;
 
 	aco::gfx::VulkanRenderer app;
-
+	
 	try 
 	{
-		// This app only works on ppm images
 		app.Run();
 	}
 	catch (const std::exception& e) 
@@ -27,18 +28,22 @@ int main(void)
 
 	return EXIT_SUCCESS;
 }
-	/*std::string filepath = "../Resources/Mesh/Boguchi.glb";
-	float scale = 30.0f;
 
-	aco::Mesh mesh;
-	if (!mesh.Load(filepath, scale))
-	{
-		std::cerr << "Failed to load mesh!" << std::endl;
-		return -1;
-	}
-
-	auto voxelizer = aco::Voxelizer();
-	aco::Avox avox = voxelizer.BuildAvox(mesh);
-
-	std::string savepath = "../Resources/Avox/" + extractName(filepath) + ".avox";
-	avox.Save(savepath);*/
+//int main(void)
+//{
+//	std::string filepath = "../Resources/Mesh/Boguchi.glb";
+//	float scale = 30.0f;
+//
+//	aco::Mesh mesh;
+//	if (!mesh.Load(filepath, scale))
+//	{
+//		std::cerr << "Failed to load mesh!" << std::endl;
+//		return -1;
+//	}
+//
+//	auto voxelizer = aco::Voxelizer();
+//	aco::Avox avox = voxelizer.BuildAvox(mesh);
+//
+//	std::string savepath = "../Resources/Avox/" + aco::ExtractName(filepath) + ".avox";
+//	avox.Save(savepath);
+//}

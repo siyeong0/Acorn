@@ -82,13 +82,14 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Core\Mesh\Mesh.cpp" />
-    <ClCompile Include="Core\Voxel\Avox.cpp" />
-    <ClCompile Include="Graphics\Vulkan\VulkanRenderer.cpp" />
-    <ClCompile Include="Graphics\WindowsSecurityAttributes\WindowsSecurityAttributes.cpp" />
+    <ClCompile Include="Core\Graphics\Mesh\Mesh.cpp" />
+    <ClCompile Include="Core\Graphics\Voxel\Avox.cpp" />
+    <ClCompile Include="Core\Graphics\Renderer\Vulkan\VulkanRenderer.cpp" />
+    <ClCompile Include="Core\Graphics\Renderer\WindowsSecurityAttributes\WindowsSecurityAttributes.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Core\Debug.h" />
     <ClInclude Include="Core\Math\Bounds.h" />
     <ClInclude Include="Core\Math\CuMath.cuh" />
     <ClInclude Include="Core\Math\FVector2.h" />
@@ -96,28 +97,26 @@
     <ClInclude Include="Core\Math\FVector4.h" />
     <ClInclude Include="Core\Math\Math.h" />
     <ClInclude Include="Core\Math\FMatrix4x4.h" />
-    <ClInclude Include="Core\Mesh\Mesh.h" />
-    <ClInclude Include="Core\Mesh\Texture.h" />
-    <ClInclude Include="Core\Voxelizer.h" />
-    <ClInclude Include="Core\Voxel\Avox.h" />
-    <ClInclude Include="Core\Voxel\AvoxNode.h" />
-    <ClInclude Include="Graphics\Helper\helper_math.h" />
-    <ClInclude Include="Graphics\Helper\helper_string.h" />
-    <ClInclude Include="Graphics\Helper\helper_timer.h" />
-    <ClInclude Include="Graphics\Helper\helper_cuda.h" />
-    <ClInclude Include="Graphics\Vulkan\VulkanRenderer.h" />
-    <ClInclude Include="Graphics\WindowsSecurityAttributes\WindowsSecurityAttributes.h" />
+    <ClInclude Include="Core\Graphics\Mesh\Mesh.h" />
+    <ClInclude Include="Core\Graphics\Mesh\Texture.h" />
+    <ClInclude Include="Core\Graphics\Voxel\Voxelizer.h" />
+    <ClInclude Include="Core\Graphics\Voxel\Avox.h" />
+    <ClInclude Include="Core\Graphics\Voxel\AvoxNode.h" />
+    <ClInclude Include="Core\Graphics\Renderer\Helper\helper_math.h" />
+    <ClInclude Include="Core\Graphics\Renderer\Helper\helper_timer.h" />
+    <ClInclude Include="Core\Graphics\Renderer\Vulkan\VulkanRenderer.h" />
+    <ClInclude Include="Core\Graphics\Renderer\WindowsSecurityAttributes\WindowsSecurityAttributes.h" />
     <ClInclude Include="Utils\Path.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Core\Voxelizer.cu" />
-    <CudaCompile Include="Graphics\Vulkan\VulkanRenderer.cu" />
+    <CudaCompile Include="Core\Graphics\Voxel\Voxelizer.cu" />
+    <CudaCompile Include="Core\Graphics\Renderer\Vulkan\VulkanRenderer.cu" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Graphics\Shaders\frag.spv" />
-    <None Include="Graphics\Shaders\shader.frag" />
-    <None Include="Graphics\Shaders\shader.vert" />
-    <None Include="Graphics\Shaders\vert.spv" />
+    <None Include="Shaders\frag.spv" />
+    <None Include="Shaders\shader.frag" />
+    <None Include="Shaders\shader.vert" />
+    <None Include="Shaders\vert.spv" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

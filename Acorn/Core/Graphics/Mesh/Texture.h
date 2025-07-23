@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <string>
-#include <cassert>
 
+#include "Debug.h"
 #include "Math/FVector4.h"
 
 namespace aco
@@ -19,7 +19,7 @@ namespace aco
 
 		const FVector4& operator()(int w, int h) const
 		{
-			assert(w >= 0 && w < Width && h >= 0 && h < Height);
+			ASSERT(w >= 0 && w < Width && h >= 0 && h < Height, "Index out of bounds.");
 			return Data[h * Width + w];
 		}
 

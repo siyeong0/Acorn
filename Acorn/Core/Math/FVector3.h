@@ -1,8 +1,9 @@
 ﻿#pragma once
-#include <assert.h>
 #include <cmath>
 #include <numeric>
 #include <limits>
+
+#include "Debug.h"
 
 #undef max
 
@@ -95,13 +96,13 @@ namespace aco
 
 	inline FLOAT& FVector3::operator[](size_t idx)
 	{
-		assert(idx < 3);
+		ASSERT(idx < 3, "Index out of bounds.");
 		return (&x)[idx];
 	}
 
 	inline const FLOAT& FVector3::operator[](size_t idx) const
 	{
-		assert(idx < 3);
+		ASSERT(idx < 3, "Index out of bounds.");
 		return (&x)[idx];
 	}
 

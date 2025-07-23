@@ -2,10 +2,13 @@
 
 #include <iostream>
 #include <fstream>
+#include <format>
 #include <cmath>
 #include <algorithm>
 #include <set>
 #include <unordered_map>
+
+#include "Debug.h"
 
 #include "Math/Math.h"
 #include "Math/CuMath.cuh"
@@ -16,16 +19,6 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
-
-#define CUDA_CHECK(call) \
-    do { \
-        cudaError_t err = call; \
-        if (err != cudaSuccess) { \
-            fprintf(stderr, "CUDA error at %s:%d in %s: %s\n", \
-                    __FILE__, __LINE__, __func__, cudaGetErrorString(err)); \
-            exit(1); \
-        } \
-    } while (0)
 
 namespace aco
 {
@@ -43,7 +36,7 @@ namespace aco
 
 	inline __host__ __device__ thrust::pair<uint32_t, uint32_t> splitBits(uint32_t code, uint32_t n)
 	{
-		assert(n > 0 && n <= 32);
+		// ASSERT(n >= 0 && n < 32, "Spliting pivot out of bounds.");
 		uint32_t high = code >> (32 - n);
 		uint32_t low = code & ((1u << (32 - n)) - 1);
 		return { high, low };
@@ -51,7 +44,7 @@ namespace aco
 
 	inline __host__ __device__ uint32_t combineBits(uint32_t high, uint32_t low, uint32_t n)
 	{
-		assert(n <= 32);
+		// ASSERT(n >= 0 && n < 32, "Combining pivot out of bounds.");
 		return (high << n) | low;
 	}
 
@@ -67,7 +60,7 @@ namespace aco
 		float c = cumath::Length(v0 - v1);
 
 		float sum = a + b + c;
-		assert(sum != 0.0f && "Invalid triangle. Cannot compute incenter.");
+		// ASSERT(sum != 0.0f, "Invalid triangle. Cannot compute incenter.");
 		return (a * v0 + b * v1 + c * v2) / sum;
 	}
 
@@ -84,7 +77,7 @@ namespace aco
 
 		float denom = d1.x * d2.y - d1.y * d2.x;
 
-		assert(denom != 0.0f && "Lines are parallel or coincident, cannot compute intersection.");
+		// ASSERT(denom != 0.0f, "Lines are parallel or coincident, cannot compute intersection.");
 		//if (denom == 0.0f)
 		//	return FVector2::Zero(); // Lines are parallel or coincident, return zero vector.
 
@@ -512,10 +505,11 @@ namespace aco
 		const float host_voxelSize = 0.05f;
 		const int host_numVoxelsPerAxis = 1024; // 2^10 = 1024
 		const float host_octreeSize = host_voxelSize * host_numVoxelsPerAxis;
-		assert(std::fabsf(mesh.Bounds.Max.x) < host_octreeSize &&
+		ASSERT(std::fabsf(mesh.Bounds.Max.x) < host_octreeSize &&
 			std::fabsf(mesh.Bounds.Max.y) < host_octreeSize &&
 			std::fabsf(mesh.Bounds.Min.x) < host_octreeSize &&
-			std::fabsf(mesh.Bounds.Min.y) < host_octreeSize);
+			std::fabsf(mesh.Bounds.Min.y) < host_octreeSize,
+			"Mesh bounds is bigger than max octree size");
 		// TODO: 옥트리 크기보다 메쉬 크기가 크면, 옥트리 여러개로 구성 or 동적 뎁스
 
 		// Kernel launch parameters.
@@ -604,7 +598,6 @@ namespace aco
 				);
 		}
 
-
 		int numDupFragments;
 		CUDA_CHECK(cudaMemcpy(&numDupFragments, dev_fragCounter, sizeof(int), cudaMemcpyDeviceToHost));
 
@@ -614,7 +607,7 @@ namespace aco
 
 		thrust::sort(begin, end, FragmentLessByMortonCode());
 		auto uniqueLast = thrust::unique(begin, end, FragmentEqualByMortonCode());
-		int numFragments = uniqueLast - begin;
+		int numFragments = static_cast<int>(thrust::distance(begin, uniqueLast));
 
 		//// Copy back unique fragments to host.
 		// TODO: erase
