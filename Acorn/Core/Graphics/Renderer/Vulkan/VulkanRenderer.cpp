@@ -380,7 +380,7 @@ namespace aco
 			VkSubmitInfo submitInfo = {};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-			VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame], cudaUpdateVkSemaphore };
+			VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame], mCudaUpdateVkSemaphore };
 			VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 												 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
 			submitInfo.waitSemaphoreCount = 2;
@@ -578,7 +578,7 @@ namespace aco
 			vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
 			vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
 
-			vkDestroySemaphore(mDevice, cudaUpdateVkSemaphore, nullptr);
+			vkDestroySemaphore(mDevice, mCudaUpdateVkSemaphore, nullptr);
 			vkDestroySemaphore(mDevice, mVkUpdateCudaSemaphore, nullptr);
 
 			for (size_t i = 0; i < MAX_FRAMES; i++)
@@ -766,23 +766,23 @@ namespace aco
 
 		int VulkanRenderer::setCudaVkDevice()
 		{
-			int current_device = 0;
-			int device_count = 0;
-			int devices_prohibited = 0;
+			int currentDevice = 0;
+			int deviceCount = 0;
+			int devicesProhibited = 0;
 
 			cudaDeviceProp deviceProp;
-			CUDA_CHECK(cudaGetDeviceCount(&device_count));
+			CUDA_CHECK(cudaGetDeviceCount(&deviceCount));
 
-			if (device_count == 0)
+			if (deviceCount == 0)
 			{
 				fprintf(stderr, "CUDA error: no devices supporting CUDA.\n");
 				exit(EXIT_FAILURE);
 			}
 
 			// Find the GPU which is selected by Vulkan
-			while (current_device < device_count)
+			while (currentDevice < deviceCount)
 			{
-				cudaGetDeviceProperties(&deviceProp, current_device);
+				cudaGetDeviceProperties(&deviceProp, currentDevice);
 
 				if ((deviceProp.computeMode != cudaComputeModeProhibited))
 				{
@@ -790,23 +790,23 @@ namespace aco
 					int ret = memcmp(&deviceProp.uuid, &mVkDeviceUUID, VK_UUID_SIZE);
 					if (ret == 0)
 					{
-						CUDA_CHECK(cudaSetDevice(current_device));
-						CUDA_CHECK(cudaGetDeviceProperties(&deviceProp, current_device));
+						CUDA_CHECK(cudaSetDevice(currentDevice));
+						CUDA_CHECK(cudaGetDeviceProperties(&deviceProp, currentDevice));
 						printf("GPU Device %d: \"%s\" with compute capability %d.%d\n\n",
-							current_device, deviceProp.name, deviceProp.major, deviceProp.minor);
+							currentDevice, deviceProp.name, deviceProp.major, deviceProp.minor);
 
-						return current_device;
+						return currentDevice;
 					}
 
 				}
 				else
 				{
-					devices_prohibited++;
+					devicesProhibited++;
 				}
-				current_device++;
+				currentDevice++;
 			}
 
-			if (devices_prohibited == device_count)
+			if (devicesProhibited == deviceCount)
 			{
 				fprintf(stderr, "CUDA error: No Vulkan-CUDA Interop capable GPU found.\n");
 				exit(EXIT_FAILURE);
@@ -1726,7 +1726,7 @@ namespace aco
 #endif
 			semaphoreInfo.pNext = &vulkanExportSemaphoreCreateInfo;
 
-			VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &cudaUpdateVkSemaphore));
+			VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mCudaUpdateVkSemaphore));
 			VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mVkUpdateCudaSemaphore));
 		}
 
@@ -1806,7 +1806,7 @@ namespace aco
 				IsWindows8OrGreater()
 				? VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
 				: VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
-				cudaUpdateVkSemaphore);
+				mCudaUpdateVkSemaphore);
 #else
 			externalSemaphoreHandleDesc.type = cudaExternalSemaphoreHandleTypeOpaqueFd;
 			externalSemaphoreHandleDesc.handle.fd = GetVkSemaphoreHandle(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT, cudaUpdateVkSemaphore);
