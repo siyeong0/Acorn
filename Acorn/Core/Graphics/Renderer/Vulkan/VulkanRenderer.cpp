@@ -165,7 +165,6 @@ namespace aco
 
 		void VulkanRenderer::updateUniformBuffer()
 		{
-
 			UniformBufferObject ubo = {};
 
 			// 이미지를 화면에 꽉 차게 보여주는 시점으로 설정
@@ -1891,8 +1890,8 @@ namespace aco
 				uint32_t width = (WIDTH >> mipLevelIdx) ? (WIDTH >> mipLevelIdx) : 1;
 				uint32_t height = (HEIGHT >> mipLevelIdx) ? (HEIGHT >> mipLevelIdx) : 1;
 				CUDA_CHECK(cudaMemcpy2DArrayToArray(
-					cudaMipLevelArrayOrig, 0, 0, cudaMipLevelArray, 0,
-					0, width * sizeof(uchar4), height,
+					cudaMipLevelArrayOrig, 0, 0, 
+					cudaMipLevelArray, 0, 0, width * sizeof(uchar4), height,
 					cudaMemcpyDeviceToDevice));
 
 				memset(&resourceDesc, 0, sizeof(resourceDesc));

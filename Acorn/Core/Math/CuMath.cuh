@@ -177,3 +177,104 @@ namespace cumath
 		return a + (b - a) * t;
 	}
 }
+
+// --------------------------------------------------
+// float4
+// --------------------------------------------------
+
+__host__ __device__ inline float4 operator+(float4 a, float4 b)
+{
+	return make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+
+__host__ __device__ inline float4 operator-(float4 a, float4 b)
+{
+	return make_float4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+}
+
+__host__ __device__ inline float4 operator*(float4 a, float4 b)
+{
+	return make_float4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
+}
+
+__host__ __device__ inline float4 operator*(float4 v, float s)
+{
+	return make_float4(v.x * s, v.y * s, v.z * s, v.w * s);
+}
+
+__host__ __device__ inline float4 operator*(float s, float4 v)
+{
+	return v * s;
+}
+
+__host__ __device__ inline float4 operator/(float4 v, float s)
+{
+	float inv = 1.0f / s;
+	return make_float4(v.x * inv, v.y * inv, v.z * inv, v.w * inv);
+}
+
+__host__ __device__ inline float4 operator-(float4 v)
+{
+	return make_float4(-v.x, -v.y, -v.z, -v.w);
+}
+
+// --------------------------------------------------
+// float4x4
+// --------------------------------------------------
+
+struct float4x4
+{
+	union
+	{
+		struct
+		{
+			float _m00, _m01, _m02, _m03;
+			float _m10, _m11, _m12, _m13;
+			float _m20, _m21, _m22, _m23;
+			float _m30, _m31, _m32, _m33;
+		};
+		float data[4][4];
+		float4 rows[4];
+	};
+
+	__host__ __device__ float4& operator[](int i) { return rows[i]; }
+	__host__ __device__ const float4& operator[](int i) const { return rows[i]; }
+
+	__host__ __device__ static float4x4 Identity()
+	{
+		float4x4 m;
+		m._m00 = 1.0f; m._m01 = 0.0f; m._m02 = 0.0f; m._m03 = 0.0f;
+		m._m10 = 0.0f; m._m11 = 1.0f; m._m12 = 0.0f; m._m13 = 0.0f;
+		m._m20 = 0.0f; m._m21 = 0.0f; m._m22 = 1.0f; m._m23 = 0.0f;
+		m._m30 = 0.0f; m._m31 = 0.0f; m._m32 = 0.0f; m._m33 = 1.0f;
+		return m;
+	}
+};
+
+namespace cumath
+{
+	__host__ __device__ inline float Dot(float4 a, float4 b)
+	{
+		return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+	}
+
+	__host__ __device__ inline float4 Mul(const float4& v, const float4x4& m)
+	{
+		return make_float4(
+			Dot(v, m[0]),
+			Dot(v, m[1]),
+			Dot(v, m[2]),
+			Dot(v, m[3])
+		);
+	}
+
+	__host__ __device__ inline float4x4 Transpose(const float4x4& m)
+	{
+		float4x4 t;
+		t[0] = make_float4(m[0].x, m[1].x, m[2].x, m[3].x);
+		t[1] = make_float4(m[0].y, m[1].y, m[2].y, m[3].y);
+		t[2] = make_float4(m[0].z, m[1].z, m[2].z, m[3].z);
+		t[3] = make_float4(m[0].w, m[1].w, m[2].w, m[3].w);
+		return t;
+	}
+}
