@@ -186,7 +186,7 @@ namespace aco
 
 			std::vector<VkSemaphore> mImageAvailableSemaphores;
 			std::vector<VkSemaphore> mRenderFinishedSemaphores;
-			VkSemaphore cudaUpdateVkSemaphore, mVkUpdateCudaSemaphore;
+			VkSemaphore mCudaUpdateVkSemaphore, mVkUpdateCudaSemaphore;
 			std::vector<VkFence> mInFlightFences;
 
 			size_t mCurrentFrame = 0;
