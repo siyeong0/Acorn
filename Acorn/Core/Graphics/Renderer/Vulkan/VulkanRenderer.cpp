@@ -461,10 +461,8 @@ namespace aco
 		{
 			setCudaVkDevice();
 			CUDA_CHECK(cudaStreamCreate(&mStreamToRun));
-			cudaVkImportImageMem();
+			createCudaRenderTarget();
 			cudaVkImportSemaphore();
-
-			mCublit = new Raytracer();
 
 			sdkCreateTimer(&mTimer);
 		}
@@ -1695,6 +1693,35 @@ namespace aco
 			throw std::runtime_error("failed to find suitable memory type!");
 		}
 
+		void VulkanRenderer::createCudaRenderTarget()
+		{
+			cudaExternalMemoryHandleDesc cudaExtMemHandleDesc;
+			memset(&cudaExtMemHandleDesc, 0, sizeof(cudaExtMemHandleDesc));
+#ifdef _WIN64
+			cudaExtMemHandleDesc.type =
+				IsWindows8OrGreater()
+				? cudaExternalMemoryHandleTypeOpaqueWin32
+				: cudaExternalMemoryHandleTypeOpaqueWin32Kmt;
+			cudaExtMemHandleDesc.handle.win32.handle = getVkImageMemHandle(
+				IsWindows8OrGreater()
+				? VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
+				: VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT);
+#else
+			cudaExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;
+			cudaExtMemHandleDesc.handle.fd = getVkImageMemHandle(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR);
+#endif
+			cudaExtMemHandleDesc.size = mImageMemSize;
+
+			cudaChannelFormatDesc formatDesc;
+			formatDesc.x = 8;
+			formatDesc.y = 8;
+			formatDesc.z = 8;
+			formatDesc.w = 8;
+			formatDesc.f = cudaChannelFormatKindUnsigned;
+
+			mCudaRenderTarget.InitializeWithExternalMemory(WIDTH, HEIGHT, cudaExtMemHandleDesc, formatDesc);
+		}
+
 		void VulkanRenderer::cudaVkImportSemaphore()
 		{
 			cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
@@ -1734,35 +1761,6 @@ namespace aco
 			externalSemaphoreHandleDesc.flags = 0;
 			CUDA_CHECK(cudaImportExternalSemaphore(&mCudaExtVkUpdateCudaSemaphore, &externalSemaphoreHandleDesc));
 			printf("CUDA Imported Vulkan semaphore\n");
-		}
-
-		void VulkanRenderer::cudaVkImportImageMem()
-		{
-			cudaExternalMemoryHandleDesc cudaExtMemHandleDesc;
-			memset(&cudaExtMemHandleDesc, 0, sizeof(cudaExtMemHandleDesc));
-#ifdef _WIN64
-			cudaExtMemHandleDesc.type =
-				IsWindows8OrGreater()
-				? cudaExternalMemoryHandleTypeOpaqueWin32
-				: cudaExternalMemoryHandleTypeOpaqueWin32Kmt;
-			cudaExtMemHandleDesc.handle.win32.handle = getVkImageMemHandle(
-				IsWindows8OrGreater()
-				? VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
-				: VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT);
-#else
-			cudaExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;
-			cudaExtMemHandleDesc.handle.fd = getVkImageMemHandle(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR);
-#endif
-			cudaExtMemHandleDesc.size = mImageMemSize;
-
-			cudaChannelFormatDesc formatDesc;
-			formatDesc.x = 8;
-			formatDesc.y = 8;
-			formatDesc.z = 8;
-			formatDesc.w = 8;
-			formatDesc.f = cudaChannelFormatKindUnsigned;
-
-			mCudaRenderTarget.InitializeWithExternalMemory(WIDTH, HEIGHT, cudaExtMemHandleDesc, formatDesc);
 		}
 
 		void VulkanRenderer::transitionImageLayout(

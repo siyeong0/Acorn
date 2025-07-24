@@ -3,6 +3,36 @@
 #include <math.h>
 
 // --------------------------------------------------
+// float
+// --------------------------------------------------
+namespace cumath
+{
+	__host__ __device__ inline float Abs(float v)
+	{
+		return fabs(v);
+	}
+
+	__host__ __device__ inline float Min(float a, float b)
+	{
+		return fminf(a, b);
+	}
+
+	__host__ __device__ inline float Max(float a, float b)
+	{
+		return fmaxf(a, b);
+	}
+
+	__host__ __device__ inline float Clamp(float v, float minVal, float maxVal)
+	{
+		return Max(Min(v, maxVal), minVal);
+	}
+
+	__host__ __device__ inline float Lerp(float a, float b, float t)
+	{
+		return a + (b - a) * t;
+	}
+}
+// --------------------------------------------------
 // float2
 // --------------------------------------------------
 __host__ __device__ inline float2 operator+(float2 a, float2 b)

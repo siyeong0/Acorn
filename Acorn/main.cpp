@@ -5,6 +5,7 @@
 #include "Graphics/Voxel/Voxelizer.h"
 
 #include "Graphics/Renderer/Vulkan/VulkanRenderer.h"
+#include "Graphics/Cublit/Raytracer.h"
 
 #include "Utils/Path.h"
 
@@ -15,7 +16,8 @@ int main(void)
 	std::cout << "Acorn is running!" << std::endl;
 
 	aco::gfx::VulkanRenderer app;
-	
+	aco::gfx::Raytracer raytracer;
+	app.SetBlit(&raytracer);
 	try 
 	{
 		app.Run();

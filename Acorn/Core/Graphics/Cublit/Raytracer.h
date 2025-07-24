@@ -3,12 +3,15 @@
 
 namespace aco
 {
-	class Raytracer : public gfx::ICublit
+	namespace gfx
 	{
-	public:
-		Raytracer() = default;
-		virtual ~Raytracer() = default;
+		class Raytracer : public ICublit
+		{
+		public:
+			Raytracer() = default;
+			virtual ~Raytracer() = default;
 
-		virtual void Blit(gfx::CudaRenderBuffer* renderTarget, int width, int height, cudaStream_t streamToRun) override;
-	};
+			virtual void Blit(CudaRenderBuffer* renderTarget, int width, int height, cudaStream_t streamToRun) override;
+		};
+	}
 }
