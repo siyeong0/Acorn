@@ -20,6 +20,8 @@
 #include "Debug.h"
 #include "Math/Math.h"
 
+#include "../../Cublit/Raytracer.h"
+
 namespace aco
 {
 	namespace gfx
@@ -248,7 +250,10 @@ namespace aco
 				throw std::runtime_error(std::format("Failed to acquire swap chain image!. ({})", dbg::VkResultToString(result)));
 			}
 
-			cudaUpdateVkImage();
+			if (mCublit)
+			{
+				mCublit->Blit(&mCudaRenderTarget, WIDTH, HEIGHT);
+			}
 
 			sdkStopTimer(&mTimer);
 			mDeltaTime = sdkGetAverageTimerValue(&mTimer) / 1000.0f;
@@ -453,6 +458,8 @@ namespace aco
 			cudaVkImportImageMem();
 			cudaVkImportSemaphore();
 
+			mCublit = new Raytracer();
+			
 			sdkCreateTimer(&mTimer);
 		}
 
@@ -549,17 +556,10 @@ namespace aco
 			vkDestroySampler(mDevice, mTextureSampler, nullptr);
 			vkDestroyImageView(mDevice, mTextureImageView, nullptr);
 
-			CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObject));
-			CUDA_CHECK(cudaDestroySurfaceObject(mSurfaceObjectTemp));
+			mCudaRenderTarget.Release();
 
 			sdkDeleteTimer(&mTimer);
 
-			CUDA_CHECK(cudaFree(dev_mSurfaceObject));
-			CUDA_CHECK(cudaFree(dev_mSurfaceObjectTemp));
-			CUDA_CHECK(cudaFreeMipmappedArray(mCudaImageArrayTemp));
-			CUDA_CHECK(cudaFreeMipmappedArray(mCudaImageArrayOrig));
-			CUDA_CHECK(cudaFreeMipmappedArray(mCudaImageArray));
-			CUDA_CHECK(cudaDestroyTextureObject(mTextureObjInput));
 			CUDA_CHECK(cudaDestroyExternalMemory(mCudaExtMemImageBuffer));
 			CUDA_CHECK(cudaDestroyExternalSemaphore(mCudaExtCudaUpdateVkSemaphore));
 			CUDA_CHECK(cudaDestroyExternalSemaphore(mCudaExtVkUpdateCudaSemaphore));
@@ -1745,17 +1745,10 @@ namespace aco
 				: VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT);
 #else
 			cudaExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;
-			cudaExtMemHandleDesc.handle.fd = GetVkImageMemHandle(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR);
+			cudaExtMemHandleDesc.handle.fd = getVkImageMemHandle(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR);
 #endif
 			cudaExtMemHandleDesc.size = mImageMemSize;
 
-			CUDA_CHECK(cudaImportExternalMemory(&mCudaExtMemImageBuffer, &cudaExtMemHandleDesc));
-
-			cudaExternalMemoryMipmappedArrayDesc externalMemoryMipmappedArrayDesc;
-
-			memset(&externalMemoryMipmappedArrayDesc, 0, sizeof(externalMemoryMipmappedArrayDesc));
-
-			cudaExtent extent = make_cudaExtent(WIDTH, HEIGHT, 0);
 			cudaChannelFormatDesc formatDesc;
 			formatDesc.x = 8;
 			formatDesc.y = 8;
@@ -1763,67 +1756,7 @@ namespace aco
 			formatDesc.w = 8;
 			formatDesc.f = cudaChannelFormatKindUnsigned;
 
-			externalMemoryMipmappedArrayDesc.offset = 0;
-			externalMemoryMipmappedArrayDesc.formatDesc = formatDesc;
-			externalMemoryMipmappedArrayDesc.extent = extent;
-			externalMemoryMipmappedArrayDesc.flags = 0;
-			externalMemoryMipmappedArrayDesc.numLevels = 1;
-
-			CUDA_CHECK(cudaExternalMemoryGetMappedMipmappedArray(&mCudaImageArray, mCudaExtMemImageBuffer, &externalMemoryMipmappedArrayDesc));
-
-			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaImageArrayTemp, &formatDesc, extent, 1));
-			CUDA_CHECK(cudaMallocMipmappedArray(&mCudaImageArrayOrig, &formatDesc, extent, 1));
-
-			{
-				cudaArray_t cudaArray, cudaArrayTemp, cudaArrayOrig;
-				cudaResourceDesc resourceDesc;
-
-				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaArray, mCudaImageArray, 0));
-				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaArrayTemp, mCudaImageArrayTemp, 0));
-				CUDA_CHECK(cudaGetMipmappedArrayLevel(&cudaArrayOrig, mCudaImageArrayOrig, 0));
-
-				CUDA_CHECK(cudaMemcpy2DArrayToArray(
-					cudaArrayOrig, 0, 0,
-					cudaArray, 0, 0, WIDTH * sizeof(uchar4), HEIGHT,
-					cudaMemcpyDeviceToDevice));
-
-				memset(&resourceDesc, 0, sizeof(resourceDesc));
-				resourceDesc.resType = cudaResourceTypeArray;
-				resourceDesc.res.array.array = cudaArray;
-				CUDA_CHECK(cudaCreateSurfaceObject(&mSurfaceObject, &resourceDesc));
-
-				memset(&resourceDesc, 0, sizeof(resourceDesc));
-				resourceDesc.resType = cudaResourceTypeArray;
-				resourceDesc.res.array.array = cudaArrayTemp;
-				CUDA_CHECK(cudaCreateSurfaceObject(&mSurfaceObjectTemp, &resourceDesc));
-			}
-
-			cudaResourceDesc resDescr;
-			memset(&resDescr, 0, sizeof(cudaResourceDesc));
-
-			resDescr.resType = cudaResourceTypeMipmappedArray;
-			resDescr.res.mipmap.mipmap = mCudaImageArrayOrig;
-
-			cudaTextureDesc texDescr;
-			memset(&texDescr, 0, sizeof(cudaTextureDesc));
-
-			texDescr.normalizedCoords = true;
-			texDescr.filterMode = cudaFilterModeLinear;
-			texDescr.mipmapFilterMode = cudaFilterModeLinear;
-			texDescr.addressMode[0] = cudaAddressModeWrap;
-			texDescr.addressMode[1] = cudaAddressModeWrap;
-			texDescr.maxMipmapLevelClamp = 0;
-			texDescr.readMode = cudaReadModeNormalizedFloat;
-
-			CUDA_CHECK(cudaCreateTextureObject(&mTextureObjInput, &resDescr, &texDescr, NULL));
-
-			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObject, sizeof(cudaSurfaceObject_t)));
-			CUDA_CHECK(cudaMalloc((void**)&dev_mSurfaceObjectTemp, sizeof(cudaSurfaceObject_t)));
-
-			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObject, &mSurfaceObject, sizeof(cudaSurfaceObject_t), cudaMemcpyHostToDevice));
-			CUDA_CHECK(cudaMemcpy(dev_mSurfaceObjectTemp, &mSurfaceObjectTemp, sizeof(cudaSurfaceObject_t), cudaMemcpyHostToDevice));
-
-			printf("CUDA Kernel Vulkan image buffer\n");
+			mCudaRenderTarget.InitializeWithExternalMemory(WIDTH, HEIGHT, cudaExtMemHandleDesc, formatDesc);
 		}
 
 		void VulkanRenderer::transitionImageLayout(

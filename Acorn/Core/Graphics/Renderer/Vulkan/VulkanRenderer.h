@@ -23,6 +23,8 @@
 
 #include "Math/Math.h"
 #include "../Helper/helper_timer.h"
+#include "../CUDA/ICublit.h"
+#include "../CUDA/CudaRenderBuffer.h"
 
 namespace aco
 {
@@ -114,9 +116,8 @@ namespace aco
 			void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 			void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 			uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-			void cudaVkImportSemaphore();
 			void cudaVkImportImageMem();
-			void cudaUpdateVkImage();
+			void cudaVkImportSemaphore();
 			void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 			void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
@@ -203,15 +204,10 @@ namespace aco
 			PFN_vkGetPhysicalDeviceProperties2 mFpGetPhysicalDeviceProperties2;
 
 			// CUDA objects
+			ICublit* mCublit = nullptr;
 			cudaExternalMemory_t mCudaExtMemImageBuffer;
-			cudaMipmappedArray_t mCudaImageArray;
-			cudaMipmappedArray_t mCudaImageArrayTemp;
-			cudaMipmappedArray_t mCudaImageArrayOrig;
-			cudaSurfaceObject_t mSurfaceObject;
-			cudaSurfaceObject_t mSurfaceObjectTemp;
-			cudaSurfaceObject_t* dev_mSurfaceObject;
-			cudaSurfaceObject_t* dev_mSurfaceObjectTemp;
-			cudaTextureObject_t mTextureObjInput;
+			CudaRenderBuffer mCudaRenderTarget;
+
 
 			cudaExternalSemaphore_t mCudaExtCudaUpdateVkSemaphore;
 			cudaExternalSemaphore_t mCudaExtVkUpdateCudaSemaphore;

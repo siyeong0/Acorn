@@ -83,6 +83,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Core\Graphics\Mesh\Mesh.cpp" />
+    <ClCompile Include="Core\Graphics\Renderer\CUDA\CudaRenderBuffer.cpp" />
     <ClCompile Include="Core\Graphics\Voxel\Avox.cpp" />
     <ClCompile Include="Core\Graphics\Renderer\Vulkan\VulkanRenderer.cpp" />
     <ClCompile Include="Core\Graphics\Renderer\WindowsSecurityAttributes\WindowsSecurityAttributes.cpp" />
@@ -90,6 +91,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Debug.h" />
+    <ClInclude Include="Core\Graphics\Cublit\Raytracer.h" />
+    <ClInclude Include="Core\Graphics\Renderer\CUDA\CudaRenderBuffer.h" />
+    <ClInclude Include="Core\Graphics\Renderer\CUDA\ICublit.h" />
     <ClInclude Include="Core\Math\Bounds.h" />
     <ClInclude Include="Core\Math\CuMath.cuh" />
     <ClInclude Include="Core\Math\FVector2.h" />
@@ -109,8 +113,8 @@
     <ClInclude Include="Utils\Path.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="Core\Graphics\Cublit\Raytracer.cu" />
     <CudaCompile Include="Core\Graphics\Voxel\Voxelizer.cu" />
-    <CudaCompile Include="Core\Graphics\Renderer\Vulkan\VulkanRenderer.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\frag.spv" />
