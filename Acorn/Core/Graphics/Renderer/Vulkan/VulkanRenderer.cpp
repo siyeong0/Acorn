@@ -252,7 +252,9 @@ namespace aco
 
 			if (mCublit)
 			{
+				cudaVkSemaphoreWait(mCudaExtVkUpdateCudaSemaphore);
 				mCublit->Blit(&mCudaRenderTarget, WIDTH, HEIGHT);
+				cudaVkSemaphoreSignal(mCudaExtCudaUpdateVkSemaphore);
 			}
 
 			sdkStopTimer(&mTimer);
@@ -287,16 +289,6 @@ namespace aco
 			mbMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
 		}
 
-		void VulkanRenderer::cudaVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore)
-		{
-			cudaExternalSemaphoreSignalParams extSemaphoreSignalParams;
-			memset(&extSemaphoreSignalParams, 0, sizeof(extSemaphoreSignalParams));
-
-			extSemaphoreSignalParams.params.fence.value = 0;
-			extSemaphoreSignalParams.flags = 0;
-			CUDA_CHECK(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, mStreamToRun));
-		}
-
 		void VulkanRenderer::cudaVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore)
 		{
 			cudaExternalSemaphoreWaitParams extSemaphoreWaitParams;
@@ -307,6 +299,16 @@ namespace aco
 			extSemaphoreWaitParams.flags = 0;
 
 			CUDA_CHECK(cudaWaitExternalSemaphoresAsync(&extSemaphore, &extSemaphoreWaitParams, 1, mStreamToRun));
+		}
+
+		void VulkanRenderer::cudaVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore)
+		{
+			cudaExternalSemaphoreSignalParams extSemaphoreSignalParams;
+			memset(&extSemaphoreSignalParams, 0, sizeof(extSemaphoreSignalParams));
+
+			extSemaphoreSignalParams.params.fence.value = 0;
+			extSemaphoreSignalParams.flags = 0;
+			CUDA_CHECK(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, mStreamToRun));
 		}
 
 		void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -358,7 +360,9 @@ namespace aco
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 			VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame] };
-			VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+			VkPipelineStageFlags waitStages[] = {
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+			};
 			submitInfo.waitSemaphoreCount = 1;
 			submitInfo.pWaitSemaphores = waitSemaphores;
 			submitInfo.pWaitDstStageMask = waitStages;
@@ -386,8 +390,10 @@ namespace aco
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 			VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame], mCudaUpdateVkSemaphore };
-			VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-												 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
+			VkPipelineStageFlags waitStages[] = {
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
+			};
 			submitInfo.waitSemaphoreCount = 2;
 			submitInfo.pWaitSemaphores = waitSemaphores;
 			submitInfo.pWaitDstStageMask = waitStages;
@@ -459,7 +465,7 @@ namespace aco
 			cudaVkImportSemaphore();
 
 			mCublit = new Raytracer();
-			
+
 			sdkCreateTimer(&mTimer);
 		}
 
@@ -750,13 +756,13 @@ namespace aco
 			mFpGetSemaphoreWin32HandleKHR = (PFN_vkGetSemaphoreWin32HandleKHR)vkGetDeviceProcAddr(mDevice, "vkGetSemaphoreWin32HandleKHR");
 			if (mFpGetSemaphoreWin32HandleKHR == NULL)
 			{
-				throw std::runtime_error("Vulkan: Proc address for \"vkGetSemaphoreWin32HandleKHR\" not found.\n");
+				throw std::runtime_error("Vulkan: Proc address for vkGetSemaphoreWin32HandleKHR not found.\n");
 			}
 #else
 			mFpGetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)vkGetDeviceProcAddr(device, "vkGetSemaphoreFdKHR");
 			if (mFpGetSemaphoreFdKHR == NULL)
 			{
-				throw std::runtime_error("Vulkan: Proc address for ""\"vkGetSemaphoreFdKHR\" not found.\n");
+				throw std::runtime_error("Vulkan: Proc address for vkGetSemaphoreFdKHR not found.\n");
 			}
 #endif
 		}

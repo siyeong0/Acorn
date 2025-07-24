@@ -38,6 +38,7 @@ namespace aco
 		{
 		public:
 			void Run();
+			void SetBlit(ICublit* cublit) { mCublit = cublit; }
 
 		public:
 			struct QueueFamilyIndices
@@ -58,8 +59,8 @@ namespace aco
 			void updateUniformBuffer();
 			void drawFrame();
 			void drawGui();
-			void cudaVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore);
 			void cudaVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore);
+			void cudaVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore);
 			void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 			void submitVulkan(uint32_t imageIndex);
 			void submitVulkanCuda(uint32_t imageIndex);
@@ -189,6 +190,8 @@ namespace aco
 			VkSemaphore mCudaUpdateVkSemaphore, mVkUpdateCudaSemaphore;
 			std::vector<VkFence> mInFlightFences;
 
+			size_t mImageMemSize;
+
 			size_t mCurrentFrame = 0;
 
 			bool mbFramebufferResized = false;
@@ -208,12 +211,9 @@ namespace aco
 			cudaExternalMemory_t mCudaExtMemImageBuffer;
 			CudaRenderBuffer mCudaRenderTarget;
 
-
 			cudaExternalSemaphore_t mCudaExtCudaUpdateVkSemaphore;
 			cudaExternalSemaphore_t mCudaExtVkUpdateCudaSemaphore;
 			cudaStream_t mStreamToRun;
-
-			size_t mImageMemSize;
 
 			StopWatchInterface* mTimer = nullptr;
 			float mDeltaTime;
