@@ -242,7 +242,7 @@ namespace aco
 		cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float4>();
 
 		cudaArray_t cuArray;
-		cudaMallocArray(&cuArray, &channelDesc, tex.Width, tex.Height);
+		CUDA_CHECK(cudaMallocArray(&cuArray, &channelDesc, tex.Width, tex.Height));
 
 		// Copy texture data to CUDA array.
 		CUDA_CHECK(cudaMemcpy2DToArray(

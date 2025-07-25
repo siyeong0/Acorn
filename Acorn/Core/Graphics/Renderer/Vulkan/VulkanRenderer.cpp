@@ -86,7 +86,7 @@ namespace aco
 #ifdef NDEBUG
 		const bool sEnableValidationLayers = true;
 #else
-		const bool sEnableValidationLayers = true;
+		const bool sEnableValidationLayers = false;
 #endif
 
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
@@ -169,15 +169,14 @@ namespace aco
 		{
 			UniformBufferObject ubo = {};
 
-			// 이미지를 화면에 꽉 차게 보여주는 시점으로 설정
 			ubo.Model = FMatrix4x4::Identity();
-			Mat4x4Translate(ubo.Model, 0.0f, 0.0f, 0.2f);
+			Mat4x4Translate(&ubo.Model, 0.0f, 0.0f, 0.2f);
 			ubo.View = FMatrix4x4::Identity();
 			FVector3 eye = { 0.0f, 0.0f, -5.0f };
 			FVector3 center = { 0.0f, 0.0f, 1.0f };
 			FVector3 up = { 0.0f, 1.0f, 0.0f };
-			Mat4x4LookAt(ubo.View, eye, center, up);
-			Mat4x4Ortho(ubo.Proj, -1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 10.0f);
+			ubo.View = Mat4x4LookAt(eye, center, up);
+			ubo.Proj = Mat4x4Ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 10.0f);
 
 			for (size_t i = 0; i < mSwapChainImages.size(); i++)
 			{

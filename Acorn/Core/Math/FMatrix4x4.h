@@ -10,7 +10,18 @@ namespace aco
 
 	struct FMatrix4x4
 	{
-		FLOAT m[4][4]; // row-major
+		union
+		{
+			FLOAT m[4][4]; // row-major
+			struct
+			{
+				float _m00, _m01, _m02, _m03;
+				float _m10, _m11, _m12, _m13;
+				float _m20, _m21, _m22, _m23;
+				float _m30, _m31, _m32, _m33;
+
+			};
+		};
 
 		FMatrix4x4();
 		FMatrix4x4(const FLOAT* data);

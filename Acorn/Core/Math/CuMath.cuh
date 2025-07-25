@@ -37,82 +37,119 @@ namespace cumath
 // --------------------------------------------------
 __host__ __device__ inline float2 operator+(float2 a, float2 b)
 {
-    return make_float2(a.x + b.x, a.y + b.y);
+	return make_float2(a.x + b.x, a.y + b.y);
 }
 
 __host__ __device__ inline float2 operator-(float2 a, float2 b)
 {
-    return make_float2(a.x - b.x, a.y - b.y);
+	return make_float2(a.x - b.x, a.y - b.y);
 }
 
 __host__ __device__ inline float2 operator*(float2 a, float2 b)
 {
-    return make_float2(a.x * b.x, a.y * b.y);
+	return make_float2(a.x * b.x, a.y * b.y);
 }
 
 __host__ __device__ inline float2 operator*(float2 v, float s)
 {
-    return make_float2(v.x * s, v.y * s);
+	return make_float2(v.x * s, v.y * s);
 }
 
 __host__ __device__ inline float2 operator*(float s, float2 v)
 {
-    return v * s;
+	return v * s;
 }
 
 __host__ __device__ inline float2 operator/(float2 v, float s)
 {
-    float inv = 1.0f / s;
-    return make_float2(v.x * inv, v.y * inv);
+	float inv = 1.0f / s;
+	return make_float2(v.x * inv, v.y * inv);
 }
 
 __host__ __device__ inline float2 operator-(float2 v)
 {
-    return make_float2(-v.x, -v.y);
+	return make_float2(-v.x, -v.y);
 }
+
+__host__ __device__ inline float2& operator+=(float2& a, const float2& b)
+{
+	a.x += b.x; a.y += b.y;
+	return a;
+}
+
+__host__ __device__ inline float2& operator-=(float2& a, const float2& b)
+{
+	a.x -= b.x; a.y -= b.y;
+	return a;
+}
+
+__host__ __device__ inline float2& operator*=(float2& a, const float2& b)
+{
+	a.x *= b.x; a.y *= b.y;
+	return a;
+}
+
+__host__ __device__ inline float2& operator/=(float2& a, const float2& b)
+{
+	a.x /= b.x; a.y /= b.y;
+	return a;
+}
+
+__host__ __device__ inline float2& operator*=(float2& v, float s)
+{
+	v.x *= s; v.y *= s;
+	return v;
+}
+
+__host__ __device__ inline float2& operator/=(float2& v, float s)
+{
+	v.x /= s; v.y /= s;
+	return v;
+}
+
 
 namespace cumath
 {
-    __host__ __device__ inline float Dot(float2 a, float2 b)
-    {
-        return a.x * b.x + a.y * b.y;
-    }
+	__host__ __device__ inline float Dot(float2 a, float2 b)
+	{
+		return a.x * b.x + a.y * b.y;
+	}
 
-    __host__ __device__ inline float Length(float2 v)
-    {
-        return sqrtf(Dot(v, v));
-    }
+	__host__ __device__ inline float Length(float2 v)
+	{
+		return sqrtf(Dot(v, v));
+	}
 
-    __host__ __device__ inline float2 Normalize(float2 v)
-    {
-        float len = Length(v);
-        return (len > 0.0f) ? v / len : make_float2(0.0f, 0.0f);
-    }
+	__host__ __device__ inline float2 Normalize(float2 v)
+	{
+		float len = Length(v);
+		return (len > 0.0f) ? v / len : make_float2(0.0f, 0.0f);
+	}
 
-    __host__ __device__ inline float2 Abs(float2 v)
-    {
-        return make_float2(fabsf(v.x), fabsf(v.y));
-    }
+	__host__ __device__ inline float2 Abs(float2 v)
+	{
+		return make_float2(fabsf(v.x), fabsf(v.y));
+	}
 
-    __host__ __device__ inline float2 Min(float2 a, float2 b)
-    {
-        return make_float2(fminf(a.x, b.x), fminf(a.y, b.y));
-    }
+	__host__ __device__ inline float2 Min(float2 a, float2 b)
+	{
+		return make_float2(fminf(a.x, b.x), fminf(a.y, b.y));
+	}
 
-    __host__ __device__ inline float2 Max(float2 a, float2 b)
-    {
-        return make_float2(fmaxf(a.x, b.x), fmaxf(a.y, b.y));
-    }
+	__host__ __device__ inline float2 Max(float2 a, float2 b)
+	{
+		return make_float2(fmaxf(a.x, b.x), fmaxf(a.y, b.y));
+	}
 
-    __host__ __device__ inline float2 Clamp(float2 v, float2 minVal, float2 maxVal)
-    {
-        return Max(Min(v, maxVal), minVal);
-    }
+	__host__ __device__ inline float2 Clamp(float2 v, float2 minVal, float2 maxVal)
+	{
+		return Max(Min(v, maxVal), minVal);
+	}
 
-    __host__ __device__ inline float2 Lerp(float2 a, float2 b, float t)
-    {
-        return a + (b - a) * t;
-    }
+	__host__ __device__ inline float2 Lerp(float2 a, float2 b, float t)
+	{
+		return a + (b - a) * t;
+	}
 }
 
 // --------------------------------------------------
@@ -153,6 +190,42 @@ __host__ __device__ inline float3 operator/(float3 v, float s)
 __host__ __device__ inline float3 operator-(float3 v)
 {
 	return make_float3(-v.x, -v.y, -v.z);
+}
+
+__host__ __device__ inline float3& operator+=(float3& a, const float3& b)
+{
+	a.x += b.x; a.y += b.y; a.z += b.z;
+	return a;
+}
+
+__host__ __device__ inline float3& operator-=(float3& a, const float3& b)
+{
+	a.x -= b.x; a.y -= b.y; a.z -= b.z;
+	return a;
+}
+
+__host__ __device__ inline float3& operator*=(float3& a, const float3& b)
+{
+	a.x *= b.x; a.y *= b.y; a.z *= b.z;
+	return a;
+}
+
+__host__ __device__ inline float3& operator/=(float3& a, const float3& b)
+{
+	a.x /= b.x; a.y /= b.y; a.z /= b.z;
+	return a;
+}
+
+__host__ __device__ inline float3& operator*=(float3& v, float s)
+{
+	v.x *= s; v.y *= s; v.z *= s;
+	return v;
+}
+
+__host__ __device__ inline float3& operator/=(float3& v, float s)
+{
+	v.x /= s; v.y /= s; v.z /= s;
+	return v;
 }
 
 namespace cumath
@@ -248,6 +321,47 @@ __host__ __device__ inline float4 operator-(float4 v)
 	return make_float4(-v.x, -v.y, -v.z, -v.w);
 }
 
+__host__ __device__ inline float3 to_float3(float4 v)
+{
+	return make_float3(v.x, v.y, v.z);
+}
+
+__host__ __device__ inline float4& operator+=(float4& a, const float4& b)
+{
+	a.x += b.x; a.y += b.y; a.z += b.z; a.w += b.w;
+	return a;
+}
+
+__host__ __device__ inline float4& operator-=(float4& a, const float4& b)
+{
+	a.x -= b.x; a.y -= b.y; a.z -= b.z; a.w -= b.w;
+	return a;
+}
+
+__host__ __device__ inline float4& operator*=(float4& a, const float4& b)
+{
+	a.x *= b.x; a.y *= b.y; a.z *= b.z; a.w *= b.w;
+	return a;
+}
+
+__host__ __device__ inline float4& operator/=(float4& a, const float4& b)
+{
+	a.x /= b.x; a.y /= b.y; a.z /= b.z; a.w /= b.w;
+	return a;
+}
+
+__host__ __device__ inline float4& operator*=(float4& v, float s)
+{
+	v.x *= s; v.y *= s; v.z *= s; v.w *= s;
+	return v;
+}
+
+__host__ __device__ inline float4& operator/=(float4& v, float s)
+{
+	v.x /= s; v.y /= s; v.z /= s; v.w /= s;
+	return v;
+}
+
 // --------------------------------------------------
 // float4x4
 // --------------------------------------------------
@@ -317,5 +431,34 @@ namespace cumath
 		t[2] = make_float4(m[0].z, m[1].z, m[2].z, m[3].z);
 		t[3] = make_float4(m[0].w, m[1].w, m[2].w, m[3].w);
 		return t;
+	}
+}
+
+// --------------------------------------------------
+// Utilities
+// --------------------------------------------------
+namespace cumath
+{
+	// PCG (permuted congruential generator)
+	// https://en.wikipedia.org/wiki/Permuted_congruential_generator
+	__host__ __device__ inline float Rand(unsigned int& state)
+	{
+		state = state * 74779605 + 2891336453;
+		unsigned int result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
+		result = (result >> 22) ^ result;
+		return result / 4294967295.0; // 2^32 - 1
+	}
+
+	__host__ __device__ inline float Smoothstep(float edge0, float edge1, float x)
+	{
+		// Scale, bias and saturate x to 0..1 range
+		float t = cumath::Clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+		// Evaluate polynomial
+		return t * t * (3.0f - 2.0f * t);
+	}
+
+	__host__ __device__ inline float3 Reflect(float3 v, float3 n)
+	{
+		return v - 2.0f * Dot(v, n) * n;
 	}
 }
