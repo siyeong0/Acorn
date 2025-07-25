@@ -35,7 +35,7 @@ namespace aco
 
 		out[0][3] = -FVector3::Dot(s, eye);
 		out[1][3] = -FVector3::Dot(u, eye);
-		out[2][3] = FVector3::Dot(f, eye); // 오른손 좌표계 기준
+		out[2][3] = FVector3::Dot(f, eye);
 	}
 
 	inline void Mat4x4Ortho(FMatrix4x4& out, float left, float right, float bottom, float top, float zNear, float zFar)

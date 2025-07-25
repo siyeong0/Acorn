@@ -258,10 +258,10 @@ struct float4x4
 	{
 		struct
 		{
-			float _m00, _m01, _m02, _m03;
-			float _m10, _m11, _m12, _m13;
-			float _m20, _m21, _m22, _m23;
-			float _m30, _m31, _m32, _m33;
+			float _m00, _m10, _m20, _m30;
+			float _m01, _m11, _m21, _m31;
+			float _m02, _m12, _m22, _m32;
+			float _m03, _m13, _m23, _m33;
 		};
 		float data[4][4];
 		float4 rows[4];
@@ -278,6 +278,17 @@ struct float4x4
 		m._m20 = 0.0f; m._m21 = 0.0f; m._m22 = 1.0f; m._m23 = 0.0f;
 		m._m30 = 0.0f; m._m31 = 0.0f; m._m32 = 0.0f; m._m33 = 1.0f;
 		return m;
+	}
+
+	__host__ __device__ void Transpose()
+	{
+		float tmp;
+		tmp = _m01; _m01 = _m10; _m10 = tmp;
+		tmp = _m02; _m02 = _m20; _m20 = tmp;
+		tmp = _m03; _m03 = _m30; _m30 = tmp;
+		tmp = _m12; _m12 = _m21; _m21 = tmp;
+		tmp = _m13; _m13 = _m31; _m31 = tmp;
+		tmp = _m23; _m23 = _m32; _m32 = tmp;
 	}
 };
 

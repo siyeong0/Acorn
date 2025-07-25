@@ -120,9 +120,6 @@ namespace aco
 			float fv = ((float)uy / (float)baseHeight);
 
 			// Row-major
-			float3 cameraRight = make_float3(cameraMatrix._m00, cameraMatrix._m01, cameraMatrix._m02);
-			float3 cameraUp = make_float3(cameraMatrix._m10, cameraMatrix._m11, cameraMatrix._m12);
-			float3 cameraForward = make_float3(cameraMatrix._m20, cameraMatrix._m21, cameraMatrix._m22);
 			float3 cameraPos = make_float3(cameraMatrix._m30, cameraMatrix._m31, cameraMatrix._m32);
 
 			Ray ray;
@@ -132,42 +129,36 @@ namespace aco
 			float3 viewPoint = make_float3(viewPointTemp.x, viewPointTemp.y, viewPointTemp.z);
 			ray.Dir = cumath::Normalize(viewPoint - ray.Origin);
 
-			if (ux == 0 && uy == 0)
-			{
-				float3 vp = ray.Dir;
-				printf("%f, %f, %f\n", vp.x, vp.y, vp.z);
-			}
-
-			// Render blue color
-			if (RaySphere(ray, sphereCenter, radius).bHit)
-			{
-				float4 redColor = make_float4(0.0f, 0.0f, 1.0f, 1.0f);
-				unsigned int uiRedColor = rgbaFloatToInt(redColor);
-				surf2Dwrite(uiRedColor, dstSurface[0], 4 * ux, uy);
-			}
-			else
-			{
-				float4 whiteColor = make_float4(1.0f, 1.0f, 1.0f, 1.0f);
-				unsigned int uiWhiteColor = rgbaFloatToInt(whiteColor);
-				surf2Dwrite(uiWhiteColor, dstSurface[0], 4 * ux, uy);
-			}
-
-			// // Render depth
-			//const float maxDepth = 100.0F;
-			//HitInfo hitinfo = RaySphere(ray, sphereCenter, radius);
-			//if (hitinfo.bHit)
+			//// Render blue color
+			//if (RaySphere(ray, sphereCenter, radius).bHit)
 			//{
-			//	float depth = cumath::Clamp(hitinfo.Distance / maxDepth, 0.0f, 1.0f);
-			//	float4 depthColor = make_float4(depth, depth, depth, 1.0f);
-			//	unsigned int uiDepthColor = rgbaFloatToInt(depthColor);
-			//	surf2Dwrite(uiDepthColor, dstSurface[0], 4 * ux, uy);
+			//	float4 redColor = make_float4(0.0f, 0.0f, 1.0f, 1.0f);
+			//	unsigned int uiRedColor = rgbaFloatToInt(redColor);
+			//	surf2Dwrite(uiRedColor, dstSurface[0], 4 * ux, uy);
 			//}
 			//else
 			//{
-			//	float4 blackColor = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
-			//	unsigned int uiBlackColor = rgbaFloatToInt(blackColor);
-			//	surf2Dwrite(uiBlackColor, dstSurface[0], 4 * ux, uy);
+			//	float4 whiteColor = make_float4(1.0f, 1.0f, 1.0f, 1.0f);
+			//	unsigned int uiWhiteColor = rgbaFloatToInt(whiteColor);
+			//	surf2Dwrite(uiWhiteColor, dstSurface[0], 4 * ux, uy);
 			//}
+
+			 // Render depth
+			const float maxDepth = 16.0f;
+			HitInfo hitinfo = RaySphere(ray, sphereCenter, radius);
+			if (hitinfo.bHit)
+			{
+				float depth = cumath::Clamp(hitinfo.Distance / maxDepth, 0.0f, 1.0f);
+				float4 depthColor = make_float4(depth, depth, depth, 1.0f);
+				unsigned int uiDepthColor = rgbaFloatToInt(depthColor);
+				surf2Dwrite(uiDepthColor, dstSurface[0], 4 * ux, uy);
+			}
+			else
+			{
+				float4 blackColor = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
+				unsigned int uiBlackColor = rgbaFloatToInt(blackColor);
+				surf2Dwrite(uiBlackColor, dstSurface[0], 4 * ux, uy);
+			}
 		}
 
 		void Raytracer::Blit(CudaRenderBuffer* renderTarget, int width, int height, cudaStream_t streamToRun)
@@ -207,6 +198,8 @@ namespace aco
 			cameraMatrix._m31 = eye.y;
 			cameraMatrix._m32 = eye.z;
 			cameraMatrix._m33 = 1.0f;
+
+			auto result = cumath::Mul(make_float4(1.0f, 1.0f, 0.0f, 1.0f), cameraMatrix);
 
 			float fovYDeg = 90.0f;
 			float aspectRatio = 16.0f / 9.0f;
