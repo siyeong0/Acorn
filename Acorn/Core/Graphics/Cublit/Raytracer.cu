@@ -39,7 +39,7 @@ namespace aco
 			float4 EmissionColor;
 			float4 SpecularColor;
 			float EmissionStrength;
-			float Smoothness;
+			float Roughness;
 			float SpecularProbability;
 			int Flag;
 		};
@@ -51,517 +51,458 @@ namespace aco
 			Material Material;
 		};
 
-		constexpr int NUM_OBJECTS = 84;
+		constexpr int NUM_OBJECTS = 74;
 
 		__constant__ Sphere dev_SceneList[NUM_OBJECTS];
 		__constant__ int dev_NumObjects;
 
 		Sphere host_SceneList[NUM_OBJECTS] = {
-			Sphere{ make_float3(0.000000, -1000.000000, 0.000000), 1000.000000f, Material{
-				make_float4(0.500000, 0.500000, 0.500000, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(0.000000f, -1000.000000f, 0.000000f), 1000.000000f, Material{
+				make_float4(0.500000f, 0.500000f, 0.500000f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.500000f, 0.500000f, 0.500000f, 1.0f),
+				0.0f, 0.2f, 0.4f, 0
 			} },
-			Sphere{ make_float3(-7.995381, 0.200000, -7.478668), 0.200000f, Material{
-				make_float4(0.380012, 0.506085, 0.762437, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(-7.995381f, 0.200000f, -7.478668f), 0.200000f, Material{
+				make_float4(0.380012f, 0.506085f, 0.762437f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 4.5f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-7.696819, 0.200000, -5.468978), 0.200000f, Material{
-				make_float4(0.596282, 0.140784, 0.017972, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(-7.696819f, 0.200000f, -5.468978f), 0.200000f, Material{
+				make_float4(0.596282f, 0.140784f, 0.017972f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 2.4f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-7.824804, 0.200000, -3.120637), 0.200000f, Material{
-				make_float4(0.288507, 0.465652, 0.665070, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(-7.824804f, 0.200000f, -3.120637f), 0.200000f, Material{
+				make_float4(0.288507f, 0.465652f, 0.665070f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 9.2f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-7.132909, 0.200000, -1.701323), 0.200000f, Material{
-				make_float4(0.101047, 0.293493, 0.813446, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(-7.132909f, 0.200000f, -1.701323f), 0.200000f, Material{
+				make_float4(0.101047f, 0.293493f, 0.813446f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 1.0f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-7.569523, 0.200000, 0.494554), 0.200000f, Material{
-				make_float4(0.365924, 0.221622, 0.058332, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(-7.569523f, 0.200000f, 0.494554f), 0.200000f, Material{
+				make_float4(0.365924f, 0.221622f, 0.058332f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.2f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-7.730332, 0.200000, 2.358976), 0.200000f, Material{
-				make_float4(0.051231, 0.430547, 0.454086, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(-7.730332f, 0.200000f, 2.358976f), 0.200000f, Material{
+				make_float4(0.051231f, 0.430547f, 0.454086f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 4.7f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-7.892865, 0.200000, 4.753728), 0.200000f, Material{
-				make_float4(0.826684, 0.820511, 0.908836, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-7.892865f, 0.200000f, 4.753728f), 0.200000f, Material{
+				make_float4(0.826684f, 0.820511f, 0.908836f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.389611f, 1.0f, 0
 			} },
-			Sphere{ make_float3(-7.656691, 0.200000, 6.888913), 0.200000f, Material{
-				make_float4(0.346542, 0.225385, 0.180132, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-7.656691f, 0.200000f, 6.888913f), 0.200000f, Material{
+				make_float4(0.346542f, 0.225385f, 0.180132f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.02f, 0.0f, 0
+			} },
+			Sphere{ make_float3(-7.217835f, 0.200000f, 8.203466f), 0.200000f, Material{
+				make_float4(0.600463f, 0.582386f, 0.608277f, 1.0f),
+				make_float4(0.4f, 0.2f, 0.95f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				1.0f, 1.0f, 1.0f, 0
+			} },
+			Sphere{ make_float3(-5.115232f, 0.200000f, -7.980404f), 0.200000f, Material{
+				make_float4(0.256969f, 0.138639f, 0.080293f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.24f, 0.0f, 0
+			} },
+			Sphere{ make_float3(-5.323222f, 0.200000f, -5.113037f), 0.200000f, Material{
+				make_float4(0.193093f, 0.510542f, 0.613362f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.89f, 0.0f, 0
+			} },
+			Sphere{ make_float3(-5.410681f, 0.200000f, -3.527741f), 0.200000f, Material{
+				make_float4(0.352200f, 0.191551f, 0.115972f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.77f, 0.0f, 0
+			} },
+			Sphere{ make_float3(-5.460670f, 0.200000f, -1.166543f), 0.200000f, Material{
+				make_float4(0.029486f, 0.249874f, 0.077989f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.3f, 0.0f, 0
+			} },
+			Sphere{ make_float3(-5.457659f, 0.200000f, 0.363870f), 0.200000f, Material{
+				make_float4(0.395713f, 0.762043f, 0.108515f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-7.217835, 0.200000, 8.203466), 0.200000f, Material{
-				make_float4(0.600463, 0.582386, 0.608277, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				1.0f, 0.427369f, 1.0f, 0
-			} },
-			Sphere{ make_float3(-5.115232, 0.200000, -7.980404), 0.200000f, Material{
-				make_float4(0.256969, 0.138639, 0.080293, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-5.798715f, 0.200000f, 2.161684f), 0.200000f, Material{
+				make_float4(0.000000f, 0.000000f, 0.000000f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-5.323222, 0.200000, -5.113037), 0.200000f, Material{
-				make_float4(0.193093, 0.510542, 0.613362, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-5.116586f, 0.200000f, 4.470188f), 0.200000f, Material{
+				make_float4(0.059444f, 0.404603f, 0.171767f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-5.410681, 0.200000, -3.527741), 0.200000f, Material{
-				make_float4(0.352200, 0.191551, 0.115972, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-5.273591f, 0.200000f, 6.795187f), 0.200000f, Material{
+				make_float4(0.499454f, 0.131330f, 0.158348f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-5.460670, 0.200000, -1.166543), 0.200000f, Material{
-				make_float4(0.029486, 0.249874, 0.077989, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-5.120286f, 0.200000f, 8.731398f), 0.200000f, Material{
+				make_float4(0.267365f, 0.136024f, 0.300483f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-5.457659, 0.200000, 0.363870), 0.200000f, Material{
-				make_float4(0.395713, 0.762043, 0.108515, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.601565f, 0.200000f, -7.895600f), 0.200000f, Material{
+				make_float4(0.027752f, 0.155209f, 0.330428f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-5.798715, 0.200000, 2.161684), 0.200000f, Material{
-				make_float4(0.000000, 0.000000, 0.000000, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(-5.116586, 0.200000, 4.470188), 0.200000f, Material{
-				make_float4(0.059444, 0.404603, 0.171767, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(-5.273591, 0.200000, 6.795187), 0.200000f, Material{
-				make_float4(0.499454, 0.131330, 0.158348, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(-5.120286, 0.200000, 8.731398), 0.200000f, Material{
-				make_float4(0.267365, 0.136024, 0.300483, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(-3.601565, 0.200000, -7.895600), 0.200000f, Material{
-				make_float4(0.027752, 0.155209, 0.330428, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(-3.735860, 0.200000, -5.163056), 0.200000f, Material{
-				make_float4(0.576768, 0.884712, 0.993335, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.735860f, 0.200000f, -5.163056f), 0.200000f, Material{
+				make_float4(0.576768f, 0.884712f, 0.993335f, 1.0f),
+				make_float4(0.576768f, 0.884712f, 0.993335f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.359385f, 1.0f, 0
 			} },
-			Sphere{ make_float3(-3.481116, 0.200000, -3.794556), 0.200000f, Material{
-				make_float4(0.405104, 0.066436, 0.009339, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.481116f, 0.200000f, -3.794556f), 0.200000f, Material{
+				make_float4(0.405104f, 0.066436f, 0.009339f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-3.866858, 0.200000, -1.465965), 0.200000f, Material{
-				make_float4(0.027570, 0.021652, 0.252798, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.866858f, 0.200000f, -1.465965f), 0.200000f, Material{
+				make_float4(0.027570f, 0.021652f, 0.252798f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-3.168870, 0.200000, 0.553099), 0.200000f, Material{
-				make_float4(0.421992, 0.107577, 0.177504, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.168870f, 0.200000f, 0.553099f), 0.200000f, Material{
+				make_float4(0.421992f, 0.107577f, 0.177504f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-3.428552, 0.200000, 2.627547), 0.200000f, Material{
-				make_float4(0.974029, 0.653443, 0.571877, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.428552f, 0.200000f, 2.627547f), 0.200000f, Material{
+				make_float4(0.974029f, 0.653443f, 0.571877f, 1.0f),
+				make_float4(0.974029f, 0.653443f, 0.571877f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.312780f, 1.0f, 0
 			} },
-			Sphere{ make_float3(-3.771736, 0.200000, 4.324785), 0.200000f, Material{
-				make_float4(0.685957, 0.000043, 0.181270, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.771736f, 0.200000f, 4.324785f), 0.200000f, Material{
+				make_float4(0.685957f, 0.000043f, 0.181270f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-3.768522, 0.200000, 6.384588), 0.200000f, Material{
-				make_float4(0.025972, 0.082246, 0.138765, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.768522f, 0.200000f, 6.384588f), 0.200000f, Material{
+				make_float4(0.025972f, 0.082246f, 0.138765f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-3.286992, 0.200000, 8.441148), 0.200000f, Material{
-				make_float4(0.186577, 0.560376, 0.367045, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-3.286992f, 0.200000f, 8.441148f), 0.200000f, Material{
+				make_float4(0.186577f, 0.560376f, 0.367045f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.552127, 0.200000, -7.728200), 0.200000f, Material{
-				make_float4(0.202998, 0.002459, 0.015350, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.552127f, 0.200000f, -7.728200f), 0.200000f, Material{
+				make_float4(0.202998f, 0.002459f, 0.015350f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.360796, 0.200000, -5.346098), 0.200000f, Material{
-				make_float4(0.690820, 0.028470, 0.179907, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.360796f, 0.200000f, -5.346098f), 0.200000f, Material{
+				make_float4(0.690820f, 0.028470f, 0.179907f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.287209, 0.200000, -3.735321), 0.200000f, Material{
-				make_float4(0.345974, 0.672353, 0.450180, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.287209f, 0.200000f, -3.735321f), 0.200000f, Material{
+				make_float4(0.345974f, 0.672353f, 0.450180f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.344859, 0.200000, -1.726654), 0.200000f, Material{
-				make_float4(0.209209, 0.431116, 0.164732, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.344859f, 0.200000f, -1.726654f), 0.200000f, Material{
+				make_float4(0.209209f, 0.431116f, 0.164732f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.974774, 0.200000, 0.183260), 0.200000f, Material{
-				make_float4(0.006736, 0.675637, 0.622067, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.974774f, 0.200000f, 0.183260f), 0.200000f, Material{
+				make_float4(0.006736f, 0.675637f, 0.622067f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.542872, 0.200000, 2.067868), 0.200000f, Material{
-				make_float4(0.192247, 0.016661, 0.010109, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.542872f, 0.200000f, 2.067868f), 0.200000f, Material{
+				make_float4(0.192247f, 0.016661f, 0.010109f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.743856, 0.200000, 4.752810), 0.200000f, Material{
-				make_float4(0.295270, 0.108339, 0.276513, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.743856f, 0.200000f, 4.752810f), 0.200000f, Material{
+				make_float4(0.295270f, 0.108339f, 0.276513f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.955621, 0.200000, 6.493702), 0.200000f, Material{
-				make_float4(0.270527, 0.270494, 0.202029, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.955621f, 0.200000f, 6.493702f), 0.200000f, Material{
+				make_float4(0.270527f, 0.270494f, 0.202029f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(-1.350449, 0.200000, 8.068503), 0.200000f, Material{
-				make_float4(0.646942, 0.501660, 0.573693, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(-1.350449f, 0.200000f, 8.068503f), 0.200000f, Material{
+				make_float4(0.646942f, 0.501660f, 0.573693f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.346551f, 1.0f, 0
 			} },
-			Sphere{ make_float3(0.706123, 0.200000, -7.116040), 0.200000f, Material{
-				make_float4(0.027695, 0.029917, 0.235781, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.706123f, 0.200000f, -7.116040f), 0.200000f, Material{
+				make_float4(0.027695f, 0.029917f, 0.235781f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(0.897766, 0.200000, -5.938681), 0.200000f, Material{
-				make_float4(0.114934, 0.046258, 0.039647, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.897766f, 0.200000f, -5.938681f), 0.200000f, Material{
+				make_float4(0.114934f, 0.046258f, 0.039647f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(0.744113, 0.200000, -3.402960), 0.200000f, Material{
-				make_float4(0.513631, 0.335578, 0.204787, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.744113f, 0.200000f, -3.402960f), 0.200000f, Material{
+				make_float4(0.513631f, 0.335578f, 0.204787f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(0.867750, 0.200000, -1.311908), 0.200000f, Material{
-				make_float4(0.400246, 0.000956, 0.040513, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.867750f, 0.200000f, -1.311908f), 0.200000f, Material{
+				make_float4(0.400246f, 0.000956f, 0.040513f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(0.082480, 0.200000, 0.838206), 0.200000f, Material{
-				make_float4(0.594141, 0.215068, 0.025718, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.082480f, 0.200000f, 0.838206f), 0.200000f, Material{
+				make_float4(0.594141f, 0.215068f, 0.025718f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(0.649692, 0.200000, 2.525103), 0.200000f, Material{
-				make_float4(0.602157, 0.797249, 0.614694, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.649692f, 0.200000f, 2.525103f), 0.200000f, Material{
+				make_float4(0.602157f, 0.797249f, 0.614694f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.341860f, 1.0f, 0
 			} },
-			Sphere{ make_float3(0.378574, 0.200000, 4.055579), 0.200000f, Material{
-				make_float4(0.005086, 0.003349, 0.064403, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.378574f, 0.200000f, 4.055579f), 0.200000f, Material{
+				make_float4(0.005086f, 0.003349f, 0.064403f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(0.425844, 0.200000, 6.098526), 0.200000f, Material{
-				make_float4(0.266812, 0.016602, 0.000853, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.425844f, 0.200000f, 6.098526f), 0.200000f, Material{
+				make_float4(0.266812f, 0.016602f, 0.000853f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(0.261365, 0.200000, 8.661150), 0.200000f, Material{
-				make_float4(0.150201, 0.007353, 0.152506, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(0.261365f, 0.200000f, 8.661150f), 0.200000f, Material{
+				make_float4(0.150201f, 0.007353f, 0.152506f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.814218, 0.200000, -7.751227), 0.200000f, Material{
-				make_float4(0.570094, 0.610319, 0.584192, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.814218f, 0.200000f, -7.751227f), 0.200000f, Material{
+				make_float4(0.570094f, 0.610319f, 0.584192f, 1.0f),
+				make_float4(0.570094f, 0.610319f, 0.584192f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.018611f, 1.0f, 0
 			} },
-			Sphere{ make_float3(2.050073, 0.200000, -5.731364), 0.200000f, Material{
-				make_float4(0.109886, 0.029498, 0.303265, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.050073f, 0.200000f, -5.731364f), 0.200000f, Material{
+				make_float4(0.109886f, 0.029498f, 0.303265f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.020130, 0.200000, -3.472627), 0.200000f, Material{
-				make_float4(0.216908, 0.216448, 0.221775, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.020130f, 0.200000f, -3.472627f), 0.200000f, Material{
+				make_float4(0.216908f, 0.216448f, 0.221775f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.884277, 0.200000, -1.232662), 0.200000f, Material{
-				make_float4(0.483428, 0.027275, 0.113898, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.884277f, 0.200000f, -1.232662f), 0.200000f, Material{
+				make_float4(0.483428f, 0.027275f, 0.113898f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.644454, 0.200000, 0.596324), 0.200000f, Material{
-				make_float4(0.005872, 0.860718, 0.561933, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.644454f, 0.200000f, 0.596324f), 0.200000f, Material{
+				make_float4(0.005872f, 0.860718f, 0.561933f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.194283, 0.200000, 2.880603), 0.200000f, Material{
-				make_float4(0.452710, 0.824152, 0.045179, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.194283f, 0.200000f, 2.880603f), 0.200000f, Material{
+				make_float4(0.452710f, 0.824152f, 0.045179f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.281000, 0.200000, 4.094307), 0.200000f, Material{
-				make_float4(0.002091, 0.145849, 0.032535, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.281000f, 0.200000f, 4.094307f), 0.200000f, Material{
+				make_float4(0.002091f, 0.145849f, 0.032535f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.080841, 0.200000, 6.716384), 0.200000f, Material{
-				make_float4(0.468539, 0.032772, 0.018071, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.080841f, 0.200000f, 6.716384f), 0.200000f, Material{
+				make_float4(0.468539f, 0.032772f, 0.018071f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(2.287131, 0.200000, 8.583242), 0.200000f, Material{
-				make_float4(0.000000, 0.000000, 0.000000, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(2.287131f, 0.200000f, 8.583242f), 0.200000f, Material{
+				make_float4(0.000000f, 0.000000f, 0.000000f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(4.329136, 0.200000, -7.497218), 0.200000f, Material{
-				make_float4(0.030865, 0.071452, 0.016051, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(4.329136f, 0.200000f, -7.497218f), 0.200000f, Material{
+				make_float4(0.030865f, 0.071452f, 0.016051f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(4.502115, 0.200000, -5.941060), 0.200000f, Material{
-				make_float4(0.000000, 0.000000, 0.000000, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(4.502115f, 0.200000f, -5.941060f), 0.200000f, Material{
+				make_float4(0.000000f, 0.000000f, 0.000000f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(4.750631, 0.200000, -3.836759), 0.200000f, Material{
-				make_float4(0.702578, 0.084798, 0.141374, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(4.750631f, 0.200000f, -3.836759f), 0.200000f, Material{
+				make_float4(0.702578f, 0.084798f, 0.141374f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(4.082084, 0.200000, -1.180746), 0.200000f, Material{
-				make_float4(0.043052, 0.793077, 0.018707, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(4.277152f, 0.200000f, 4.297482f), 0.200000f, Material{
+				make_float4(0.422693f, 0.011222f, 0.211945f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(4.429173, 0.200000, 2.069721), 0.200000f, Material{
-				make_float4(0.179009, 0.147750, 0.617371, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(4.012743f, 0.200000f, 6.225072f), 0.200000f, Material{
+				make_float4(0.986275f, 0.073358f, 0.133628f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(4.277152, 0.200000, 4.297482), 0.200000f, Material{
-				make_float4(0.422693, 0.011222, 0.211945, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(4.012743, 0.200000, 6.225072), 0.200000f, Material{
-				make_float4(0.986275, 0.073358, 0.133628, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(4.047066, 0.200000, 8.419360), 0.200000f, Material{
-				make_float4(0.878749, 0.677170, 0.684995, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(4.047066f, 0.200000f, 8.419360f), 0.200000f, Material{
+				make_float4(0.878749f, 0.677170f, 0.684995f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.243932f, 1.0f, 0
 			} },
-			Sphere{ make_float3(6.441846, 0.200000, -7.700798), 0.200000f, Material{
-				make_float4(0.309255, 0.342524, 0.489512, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(6.441846f, 0.200000f, -7.700798f), 0.200000f, Material{
+				make_float4(0.309255f, 0.342524f, 0.489512f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(6.047810, 0.200000, -5.519369), 0.200000f, Material{
-				make_float4(0.532361, 0.008200, 0.077522, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(6.430776f, 0.200000f, -1.332107f), 0.200000f, Material{
+				make_float4(0.641951f, 0.661402f, 0.326114f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(6.779211, 0.200000, -3.740542), 0.200000f, Material{
-				make_float4(0.161234, 0.539314, 0.016667, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(6.476387f, 0.200000f, 0.329973f), 0.200000f, Material{
+				make_float4(0.033000f, 0.648388f, 0.166911f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(6.430776, 0.200000, -1.332107), 0.200000f, Material{
-				make_float4(0.641951, 0.661402, 0.326114, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(6.011877f, 0.200000f, 6.569579f), 0.200000f, Material{
+				make_float4(0.044868f, 0.651697f, 0.086779f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(6.476387, 0.200000, 0.329973), 0.200000f, Material{
-				make_float4(0.033000, 0.648388, 0.166911, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(6.096087f, 0.200000f, 8.892333f), 0.200000f, Material{
+				make_float4(0.588587f, 0.078723f, 0.044928f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(6.568686, 0.200000, 2.116949), 0.200000f, Material{
-				make_float4(0.590952, 0.072292, 0.125672, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(6.371189, 0.200000, 4.609841), 0.200000f, Material{
-				make_float4(0.870345, 0.753830, 0.933118, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				1.0f, 0.233489f, 1.0f, 0
-			} },
-			Sphere{ make_float3(6.011877, 0.200000, 6.569579), 0.200000f, Material{
-				make_float4(0.044868, 0.651697, 0.086779, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(6.096087, 0.200000, 8.892333), 0.200000f, Material{
-				make_float4(0.588587, 0.078723, 0.044928, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(8.185763, 0.200000, -7.191109), 0.200000f, Material{
-				make_float4(0.989702, 0.886784, 0.540759, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(8.185763f, 0.200000f, -7.191109f), 0.200000f, Material{
+				make_float4(0.989702f, 0.886784f, 0.540759f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.104229f, 1.0f, 0
 			} },
-			Sphere{ make_float3(8.411960, 0.200000, -5.285309), 0.200000f, Material{
-				make_float4(0.139604, 0.022029, 0.461688, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(8.411960f, 0.200000f, -5.285309f), 0.200000f, Material{
+				make_float4(0.139604f, 0.022029f, 0.461688f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(8.047109, 0.200000, -3.427552), 0.200000f, Material{
-				make_float4(0.815002, 0.631228, 0.806757, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(8.047109f, 0.200000f, -3.427552f), 0.200000f, Material{
+				make_float4(0.815002f, 0.631228f, 0.806757f, 1.0f),
+				make_float4(0.815002f, 0.631228f, 0.806757f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				1.0f, 0.150782f, 1.0f, 0
 			} },
-			Sphere{ make_float3(8.119639, 0.200000, -1.652587), 0.200000f, Material{
-				make_float4(0.177852, 0.429797, 0.042251, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(8.119639f, 0.200000f, -1.652587f), 0.200000f, Material{
+				make_float4(0.177852f, 0.429797f, 0.042251f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(8.818120, 0.200000, 0.401292), 0.200000f, Material{
-				make_float4(0.065416, 0.087694, 0.040518, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
+			Sphere{ make_float3(8.256561f, 0.200000f, 8.129115f), 0.200000f, Material{
+				make_float4(0.002612f, 0.598319f, 0.435378f, 1.0f),
+				make_float4(0.0f, 0.0f, 0.0f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
 				0.0f, 1.000000f, 0.0f, 0
 			} },
-			Sphere{ make_float3(8.754155, 0.200000, 2.152549), 0.200000f, Material{
-				make_float4(0.230659, 0.035665, 0.435895, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(0.000000f, 1.000000f, 0.000000f), 1.000000f, Material{
+				make_float4(0.000000f, 0.000000f, 0.000000f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.114f, 0.85f, 0
 			} },
-			Sphere{ make_float3(8.595298, 0.200000, 4.802001), 0.200000f, Material{
-				make_float4(0.188493, 0.184933, 0.040215, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
+			Sphere{ make_float3(-4.000000f, 1.000000f, 0.000000f), 1.000000f, Material{
+				make_float4(0.400000f, 0.200000f, 0.100000f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.2f, 0.95f, 0
 			} },
-			Sphere{ make_float3(8.036216, 0.200000, 6.739752), 0.200000f, Material{
-				make_float4(0.023192, 0.364636, 0.464844, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(8.256561, 0.200000, 8.129115), 0.200000f, Material{
-				make_float4(0.002612, 0.598319, 0.435378, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(0.000000, 1.000000, 0.000000), 1.000000f, Material{
-				make_float4(0.000000, 0.000000, 0.000000, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(-4.000000, 1.000000, 0.000000), 1.000000f, Material{
-				make_float4(0.400000, 0.200000, 0.100000, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				0.0f, 1.000000f, 0.0f, 0
-			} },
-			Sphere{ make_float3(4.000000, 1.000000, 0.000000), 1.000000f, Material{
-				make_float4(0.700000, 0.600000, 0.500000, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				make_float4(1.0f, 1.0f, 1.0f, 1.0f),
-				1.0f, 0.000000f, 1.0f, 0
+			Sphere{ make_float3(4.000000f, 1.000000f, 0.000000f), 1.000000f, Material{
+				make_float4(0.700000f, 0.600000f, 0.500000f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				make_float4(0.96f, 0.96f, 0.96f, 1.0f),
+				0.0f, 0.0f, 0.99f, 0 // TODO: 머터리얼 조정
 			} }
 		};
+
 
 		struct Ray
 		{
@@ -580,7 +521,7 @@ namespace aco
 
 		__host__ __device__ float randNormalDistribution(unsigned int& state)
 		{
-			float theta = 2.0 * 3.14159265358979323846 * cumath::Rand(state);
+			float theta = 2.0f * PI * cumath::Rand(state);
 			float rho = sqrt(-2.0 * log(cumath::Rand(state)));
 			return rho * cos(theta);
 		}
@@ -612,7 +553,7 @@ namespace aco
 
 			if (discriminant >= 0.0)
 			{
-				float dist = (-b - sqrt(discriminant)) / (2.0 * a);
+				float dist = (-b - sqrt(discriminant)) / (2.0f * a);
 
 				if (dist > 0.0)
 				{
@@ -665,10 +606,10 @@ namespace aco
 
 					bool bSpecularBounce = material.SpecularProbability >= cumath::Rand(state);
 
-					ray.Origin = hitinfo.HitPoint;
+					ray.Origin = hitinfo.HitPoint + hitinfo.Normal * 0.01f;
 					float3 diffuseDir = cumath::Normalize(hitinfo.Normal + randDirection(state));
 					float3 specularDir = cumath::Reflect(ray.Dir, hitinfo.Normal);
-					ray.Dir = cumath::Normalize(cumath::Lerp(diffuseDir, specularDir, material.Smoothness * bSpecularBounce));
+					ray.Dir = cumath::Normalize(cumath::Lerp(diffuseDir, specularDir, (1.0f - material.Roughness) * bSpecularBounce));
 
 					float3 emittedLight = to_float3(material.EmissionColor * material.EmissionStrength);
 					incomingLight += emittedLight * rayColor;
@@ -740,12 +681,25 @@ namespace aco
 				(uint32_t)ceil(float(height) / dimBlock.y),
 				1);
 
-			FVector3 eye = { 13.0f, 2.0f, 4.0f };
-			FVector3 center = { 0.0f, 0.0f, 0.0f };
-			FVector3 up = { 0.0f, 1.0f, 0.0f };
+			const FVector3 eye = { 13.0f, 2.0f, 4.0f };
+			const FVector3 center = { 0.0f, 0.0f, 0.0f };
+			const FVector3 up = { 0.0f, 1.0f, 0.0f };
+
+			// Rotation
+			static float time = 0.0f; // 누적 시간 (프레임당 증가)
+			time += 0.02f; // 프레임당 회전 속도 조절
+			float radius = sqrtf(eye.x * eye.x + eye.z * eye.z);
+			float angle = time;
+
+			FVector3 rotEye = {
+				center.x + radius * cosf(angle),
+				eye.y,
+				center.z + radius * sinf(angle)
+			};
+
 
 			float4x4 cameraMatrix;
-			FMatrix4x4 cameraMatrixFMat = Mat4x4Camera(eye, center, up);
+			FMatrix4x4 cameraMatrixFMat = Mat4x4Camera(rotEye, center, up);
 			memcpy(&cameraMatrix, &cameraMatrixFMat.Transposed(), sizeof(float) * 16);
 
 			float fovYDeg = 40.0f;

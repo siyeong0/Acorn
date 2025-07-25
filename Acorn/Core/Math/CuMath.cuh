@@ -1,6 +1,10 @@
 ﻿#pragma once
 #include <cuda_runtime.h>
 #include <math.h>
+// --------------------------------------------------
+// Constants
+// --------------------------------------------------
+#define PI 3.14159265358979323846f
 
 // --------------------------------------------------
 // float
@@ -446,7 +450,7 @@ namespace cumath
 		state = state * 74779605 + 2891336453;
 		unsigned int result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
 		result = (result >> 22) ^ result;
-		return result / 4294967295.0; // 2^32 - 1
+		return result / 4294967295.0f; // 2^32 - 1
 	}
 
 	__host__ __device__ inline float Smoothstep(float edge0, float edge1, float x)
