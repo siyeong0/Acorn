@@ -33,8 +33,8 @@ int main(void)
 
 //int main(void)
 //{
-//	std::string filepath = "../Resources/Mesh/Boguchi.glb";
-//	float scale = 30.0f;
+//	std::string filepath = "../Resources/Mesh/acorn.glb";
+//	float scale = 1.0f;
 //
 //	aco::Mesh mesh;
 //	if (!mesh.Load(filepath, scale))

@@ -157,3 +157,11 @@ namespace dbg
     } while (0)
 
 #endif
+
+// --------------------------------------------------
+// NRD
+// --------------------------------------------------
+#define NRI_ABORT_ON_FAILURE(result) \
+    if ((result) != nri::Result::SUCCESS) { \
+        exit(1); \
+    }

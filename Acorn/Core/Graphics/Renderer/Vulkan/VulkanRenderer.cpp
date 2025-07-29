@@ -17,6 +17,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
+#include "NRDIntegration.hpp"
+
 #include "Debug.h"
 #include "Math/Math.h"
 
@@ -146,6 +148,7 @@ namespace aco
 			initWindow();
 			initVulkan();
 			initCuda();
+			initNRD();
 			initImgui();
 
 			// Main loop.
@@ -264,7 +267,7 @@ namespace aco
 			mCurrentFrame = (mCurrentFrame + 1) % MAX_FRAMES;
 			// Added sleep of 10 millisecs so that CPU does not submit too much work
 			// to GPU
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			// std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			char title[256];
 			sprintf(title, "Acorn %3.1f fps", avgFps);
 			glfwSetWindowTitle(mWindow, title);
@@ -464,6 +467,254 @@ namespace aco
 			cudaVkImportSemaphore();
 
 			sdkCreateTimer(&mTimer);
+		}
+
+		template <typename T, uint32_t N>
+		constexpr uint32_t getCountOf(T const (&)[N]) { return N; }
+		template <typename T>
+		constexpr uint32_t getCountOf(const std::vector<T>& v) { return (uint32_t)v.size(); }
+		template <typename T, size_t N>
+		constexpr uint32_t getCountOf(const std::array<T, N>& v) { return (uint32_t)v.size(); }
+
+		void VulkanRenderer::initNRD()
+		{
+			/*nri::DeviceCreationVKDesc deviceDesc = {};
+
+			nri::QueueFamilyVKDesc queueFamily = {};
+			queueFamily.queueType = nri::QueueType::GRAPHICS;
+			queueFamily.queueNum = 1;
+			queueFamily.familyIndex = findQueueFamilies(mPhysicalDevice, mSurface).GraphicsFamily;
+
+			deviceDesc.vkInstance = mInstance;
+			deviceDesc.vkPhysicalDevice = mPhysicalDevice;
+			deviceDesc.vkDevice = mDevice;
+			deviceDesc.queueFamilies = &queueFamily;
+			deviceDesc.queueFamilyNum = 1;
+
+			nri::Device* nriDevice = nullptr;
+			nri::nriCreateDeviceFromVKDevice(deviceDesc, nriDevice);*/
+
+			nri::Device* nriDevice = nullptr;
+
+			nri::AdapterDesc bestAdapterDesc = {};
+			uint32_t adapterDescsNum = 1;
+			NRI_ABORT_ON_FAILURE(nri::nriEnumerateAdapters(&bestAdapterDesc, adapterDescsNum));
+
+			nri::DeviceCreationDesc deviceCreationDesc = {};
+			deviceCreationDesc.graphicsAPI = nri::GraphicsAPI::VK;
+			deviceCreationDesc.enableGraphicsAPIValidation = false;
+			deviceCreationDesc.enableNRIValidation = false;
+			deviceCreationDesc.vkBindingOffsets = VK_BINDING_OFFSETS;
+			deviceCreationDesc.adapterDesc = &bestAdapterDesc;
+			NRI_ABORT_ON_FAILURE(nri::nriCreateDevice(deviceCreationDesc, nriDevice));
+
+			NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::CoreInterface), (nri::CoreInterface*)&mNRIInterface));
+			NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::HelperInterface), (nri::HelperInterface*)&mNRIInterface));
+			NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::RayTracingInterface), (nri::RayTracingInterface*)&mNRIInterface));
+			NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::ResourceAllocatorInterface), (nri::ResourceAllocatorInterface*)&mNRIInterface));
+			NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::StreamerInterface), (nri::StreamerInterface*)&mNRIInterface));
+			NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::SwapChainInterface), (nri::SwapChainInterface*)&mNRIInterface));
+			NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::UpscalerInterface), (nri::UpscalerInterface*)&mNRIInterface));
+
+			NRI_ABORT_ON_FAILURE(mNRIInterface.GetQueue(*nriDevice, nri::QueueType::GRAPHICS, 0, mNRIGraphicsQueue));
+			NRI_ABORT_ON_FAILURE(mNRIInterface.CreateFence(*nriDevice, 0, mNRIFrameFence));
+
+			{ // Create streamer
+				nri::StreamerDesc streamerDesc = {};
+				streamerDesc.constantBufferMemoryLocation = nri::MemoryLocation::HOST_UPLOAD;
+				streamerDesc.constantBufferSize = DYNAMIC_CONSTANT_BUFFER_SIZE;
+				streamerDesc.dynamicBufferMemoryLocation = nri::MemoryLocation::HOST_UPLOAD;
+				streamerDesc.dynamicBufferUsageBits = nri::BufferUsageBits::VERTEX_BUFFER | nri::BufferUsageBits::INDEX_BUFFER | nri::BufferUsageBits::SHADER_RESOURCE | nri::BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_INPUT;
+				streamerDesc.queuedFrameNum = mbVsync ? 2 : 3;
+				NRI_ABORT_ON_FAILURE(mNRIInterface.CreateStreamer(*nriDevice, streamerDesc, mNRIStreamer));
+			}
+			
+			// TODO: Check NIS, HDR supports
+			//{ // Create upscaler: NIS
+			//	nri::UpscalerDesc upscalerDesc = {};
+			//	upscalerDesc.upscaleResolution = { WIDTH, HEIGHT };
+			//	upscalerDesc.type = nri::UpscalerType::NIS;
+
+			//	upscalerDesc.flags = nri::UpscalerBits::NONE;
+			//	NRI_ABORT_ON_FAILURE(mNRIInterface.CreateUpscaler(*nriDevice, upscalerDesc, mNRIUpsaclers[0]));
+
+			//	upscalerDesc.flags = nri::UpscalerBits::HDR;
+			//	NRI_ABORT_ON_FAILURE(mNRIInterface.CreateUpscaler(*nriDevice, upscalerDesc, mNRIUpsaclers[1]));
+			//}
+
+			// Create upscalers: DLSR and DLRR
+			//m_RenderResolution = GetOutputResolution();
+
+			if (mDlssQuality != -1)
+			{
+				nri::UpscalerBits upscalerFlags = nri::UpscalerBits::DEPTH_INFINITE;
+				upscalerFlags |= NRD_MODE < OCCLUSION ? nri::UpscalerBits::HDR : nri::UpscalerBits::NONE;
+				upscalerFlags |= mbReversedZ ? nri::UpscalerBits::DEPTH_INVERTED : nri::UpscalerBits::NONE;
+
+				nri::UpscalerMode mode = nri::UpscalerMode::NATIVE;
+				if (mDlssQuality == 0)
+					mode = nri::UpscalerMode::ULTRA_PERFORMANCE;
+				else if (mDlssQuality == 1)
+					mode = nri::UpscalerMode::PERFORMANCE;
+				else if (mDlssQuality == 2)
+					mode = nri::UpscalerMode::BALANCED;
+				else if (mDlssQuality == 3)
+					mode = nri::UpscalerMode::QUALITY;
+
+				if (mNRIInterface.IsUpscalerSupported(*nriDevice, nri::UpscalerType::DLSR)) {
+					nri::VideoMemoryInfo videoMemoryInfo1 = {};
+					mNRIInterface.QueryVideoMemoryInfo(*nriDevice, nri::MemoryLocation::DEVICE, videoMemoryInfo1);
+
+					nri::UpscalerDesc upscalerDesc = {};
+					upscalerDesc.upscaleResolution = { WIDTH, HEIGHT };
+					upscalerDesc.type = mUpscalerType;
+					upscalerDesc.mode = mode;
+					upscalerDesc.flags = upscalerFlags;
+					upscalerDesc.preset = mbUseDlssTnn ? 10 : 0;
+					NRI_ABORT_ON_FAILURE(mNRIInterface.CreateUpscaler(*nriDevice, upscalerDesc, mDLSR));
+
+					nri::UpscalerProps upscalerProps = {};
+					mNRIInterface.GetUpscalerProps(*mDLSR, upscalerProps);
+
+					float sx = float(upscalerProps.renderResolutionMin.w) / float(upscalerProps.renderResolution.w);
+					float sy = float(upscalerProps.renderResolutionMin.h) / float(upscalerProps.renderResolution.h);
+
+					//m_RenderResolution = { upscalerProps.renderResolution.w, upscalerProps.renderResolution.h };
+					//m_MinResolutionScale = sy > sx ? sy : sx;
+
+					nri::VideoMemoryInfo videoMemoryInfo2 = {};
+					mNRIInterface.QueryVideoMemoryInfo(*nriDevice, nri::MemoryLocation::DEVICE, videoMemoryInfo2);
+
+					/*printf("Render resolution (%u, %u)\n", m_RenderResolution.x, m_RenderResolution.y);
+					printf("DLSS-SR: allocated %.2f Mb\n", (videoMemoryInfo2.usageSize - videoMemoryInfo1.usageSize) / (1024.0f * 1024.0f));*/
+
+					/*mSettings.SR = true;*/
+				}
+
+				if (mNRIInterface.IsUpscalerSupported(*nriDevice, nri::UpscalerType::DLRR)) {
+					nri::VideoMemoryInfo videoMemoryInfo1 = {};
+					mNRIInterface.QueryVideoMemoryInfo(*nriDevice, nri::MemoryLocation::DEVICE, videoMemoryInfo1);
+
+					nri::UpscalerDesc upscalerDesc = {};
+					upscalerDesc.upscaleResolution = { WIDTH, HEIGHT };
+					upscalerDesc.type = nri::UpscalerType::DLRR;
+					upscalerDesc.mode = mode;
+					upscalerDesc.flags = upscalerFlags;
+					NRI_ABORT_ON_FAILURE(mNRIInterface.CreateUpscaler(*nriDevice, upscalerDesc, mDLRR));
+
+					nri::VideoMemoryInfo videoMemoryInfo2 = {};
+					mNRIInterface.QueryVideoMemoryInfo(*nriDevice, nri::MemoryLocation::DEVICE, videoMemoryInfo2);
+
+					/*printf("DLSS-RR: allocated %.2f Mb\n", (videoMemoryInfo2.usageSize - videoMemoryInfo1.usageSize) / (1024.0f * 1024.0f));*/
+
+					//m_Settings.RR = true;
+				}
+			}
+
+			// Initialize NRD: REBLUR, RELAX and SIGMA in one instance
+			{
+				const nrd::DenoiserDesc denoisersDescs[] = {
+					// REBLUR
+			#if (NRD_MODE == OCCLUSION)
+			#    if (NRD_COMBINED == 1)
+						{NRD_ID(REBLUR_DIFFUSE_SPECULAR_OCCLUSION), nrd::Denoiser::REBLUR_DIFFUSE_SPECULAR_OCCLUSION},
+			#    else
+						{NRD_ID(REBLUR_DIFFUSE_OCCLUSION), nrd::Denoiser::REBLUR_DIFFUSE_OCCLUSION},
+						{NRD_ID(REBLUR_SPECULAR_OCCLUSION), nrd::Denoiser::REBLUR_SPECULAR_OCCLUSION},
+			#    endif
+			#elif (NRD_MODE == SH)
+			#    if (NRD_COMBINED == 1)
+						{NRD_ID(REBLUR_DIFFUSE_SPECULAR_SH), nrd::Denoiser::REBLUR_DIFFUSE_SPECULAR_SH},
+			#    else
+						{NRD_ID(REBLUR_DIFFUSE_SH), nrd::Denoiser::REBLUR_DIFFUSE_SH},
+						{NRD_ID(REBLUR_SPECULAR_SH), nrd::Denoiser::REBLUR_SPECULAR_SH},
+			#    endif
+			#elif (NRD_MODE == DIRECTIONAL_OCCLUSION)
+						{NRD_ID(REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION), nrd::Denoiser::REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION},
+			#else
+			#    if (NRD_COMBINED == 1)
+						{NRD_ID(REBLUR_DIFFUSE_SPECULAR), nrd::Denoiser::REBLUR_DIFFUSE_SPECULAR},
+			#    else
+						{NRD_ID(REBLUR_DIFFUSE), nrd::Denoiser::REBLUR_DIFFUSE},
+						{NRD_ID(REBLUR_SPECULAR), nrd::Denoiser::REBLUR_SPECULAR},
+			#    endif
+			#endif
+
+						// RELAX
+				#if (NRD_MODE == SH)
+				#    if (NRD_COMBINED == 1)
+							{NRD_ID(RELAX_DIFFUSE_SPECULAR_SH), nrd::Denoiser::RELAX_DIFFUSE_SPECULAR_SH},
+				#    else
+							{NRD_ID(RELAX_DIFFUSE_SH), nrd::Denoiser::RELAX_DIFFUSE_SH},
+							{NRD_ID(RELAX_SPECULAR_SH), nrd::Denoiser::RELAX_SPECULAR_SH},
+				#    endif
+				#else
+				#    if (NRD_COMBINED == 1)
+							{NRD_ID(RELAX_DIFFUSE_SPECULAR), nrd::Denoiser::RELAX_DIFFUSE_SPECULAR},
+				#    else
+							{NRD_ID(RELAX_DIFFUSE), nrd::Denoiser::RELAX_DIFFUSE},
+							{NRD_ID(RELAX_SPECULAR), nrd::Denoiser::RELAX_SPECULAR},
+				#    endif
+				#endif
+
+							// SIGMA
+					#if (NRD_MODE < OCCLUSION)
+								{NRD_ID(SIGMA_SHADOW), SIGMA_VARIANT},
+					#endif
+
+								// REFERENCE
+								{NRD_ID(REFERENCE), nrd::Denoiser::REFERENCE},
+				};
+
+				nrd::InstanceCreationDesc instanceCreationDesc = {};
+				instanceCreationDesc.denoisers = denoisersDescs;
+				instanceCreationDesc.denoisersNum = getCountOf(denoisersDescs);
+
+				nrd::IntegrationCreationDesc desc = {};
+				strcpy(desc.name, "NRD");
+				desc.queuedFrameNum = mbVsync ? 2 : 3;
+				desc.enableWholeLifetimeDescriptorCaching = NRD_ENABLE_WHOLE_LIFETIME_DESCRIPTOR_CACHING;
+				desc.promoteFloat16to32 = NRD_PROMOTE_FLOAT16_TO_32;
+				desc.demoteFloat32to16 = NRD_DEMOTE_FLOAT32_TO_16;
+				desc.resourceWidth = (uint16_t)WIDTH;
+				desc.resourceHeight = (uint16_t)HEIGHT;
+				desc.autoWaitForIdle = false;
+
+				nri::VideoMemoryInfo videoMemoryInfo1 = {};
+				mNRIInterface.QueryVideoMemoryInfo(*nriDevice, nri::MemoryLocation::DEVICE, videoMemoryInfo1);
+
+				if constexpr (NRD_USE_AUTO_WRAPPER) 
+				{
+					const nri::DeviceDesc& deviceDesc = mNRIInterface.GetDeviceDesc(*nriDevice);
+
+					nri::WrapperVKInterface iWrapperVK = {};
+					NRI_ABORT_ON_FAILURE(nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::WrapperVKInterface), &iWrapperVK));
+
+					nri::QueueFamilyVKDesc queueFamily = {};
+					queueFamily.familyIndex = iWrapperVK.GetQueueFamilyIndexVK(*mNRIGraphicsQueue);
+					queueFamily.queueType = nri::QueueType::GRAPHICS;
+					queueFamily.queueNum = 1;
+
+					nri::DeviceCreationVKDesc deviceCreationVKDesc = {};
+					deviceCreationVKDesc.vkInstance = (VKHandle)iWrapperVK.GetInstanceVK(*nriDevice);
+					deviceCreationVKDesc.vkPhysicalDevice = (VKHandle)iWrapperVK.GetPhysicalDeviceVK(*nriDevice);
+					deviceCreationVKDesc.vkDevice = (VKHandle)mNRIInterface.GetDeviceNativeObject(nriDevice);
+					deviceCreationVKDesc.minorVersion = 3;
+					deviceCreationVKDesc.queueFamilies = &queueFamily;
+					deviceCreationVKDesc.queueFamilyNum = 1;
+					deviceCreationVKDesc.enableNRIValidation = false;
+
+					mNRD = new nrd::Integration();
+					if (mNRD->RecreateVK(desc, instanceCreationDesc, deviceCreationVKDesc) != nrd::Result::SUCCESS)
+						exit(1);
+				}
+
+				nri::VideoMemoryInfo videoMemoryInfo2 = {};
+				mNRIInterface.QueryVideoMemoryInfo(*nriDevice, nri::MemoryLocation::DEVICE, videoMemoryInfo2);
+
+				printf("NRD: allocated %.2f Mb for REBLUR, RELAX, SIGMA and REFERENCE denoisers\n", (videoMemoryInfo2.usageSize - videoMemoryInfo1.usageSize) / (1024.0f * 1024.0f));
+			}
+
 		}
 
 		void VulkanRenderer::initImgui()
